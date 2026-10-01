@@ -101,8 +101,12 @@ button {
 
   background: #21d875;
 
-  box-shadow:
-    0 0 10px rgba(33, 216, 117, 0.8);
+  box-shadow: 0 0 10px rgba(33, 216, 117, 0.8);
+}
+
+.flight-hud .assessment-launch {
+  margin-top: 20px;
+  pointer-events: auto;
 }
 
 /* =========================================================
@@ -168,12 +172,11 @@ button {
 }
 
 .cockpit-title {
-  font-size: 31px;
+  font-size: 21px;
   font-weight: 800;
-  letter-spacing: 5px;
+  letter-spacing: 2px;
 
-  text-shadow:
-    0 2px 12px rgba(0, 0, 0, 0.8);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
 }
 
 .cockpit-subtitle {
@@ -181,8 +184,8 @@ button {
 
   color: #8fa9ba;
 
-  font-size: 12px;
-  letter-spacing: 1.8px;
+  font-size: 9px;
+  letter-spacing: 1px;
 }
 
 /* =========================================================
@@ -192,7 +195,7 @@ button {
 .exit-cockpit {
   pointer-events: auto;
 
-  padding: 12px 20px;
+  padding: 8px 12px;
 
   border: 1px solid #1681ad;
   border-radius: 8px;
@@ -201,8 +204,8 @@ button {
 
   color: #e2f1f8;
 
-  font-size: 12px;
-  letter-spacing: 1px;
+  font-size: 10px;
+  letter-spacing: 0.5px;
 
   cursor: pointer;
 
@@ -216,176 +219,266 @@ button {
   border-color: #24b8ed;
 }
 
+.cockpit-actions {
+  display: flex;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.assessment-launch {
+  padding: 8px 11px;
+  border: 1px solid #238ca7;
+  border-radius: 5px;
+  background: rgba(5, 25, 36, 0.94);
+  color: #cdeaf0;
+  font-size: 9px;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+}
+
+.assessment-launch:hover {
+  border-color: #4ec8d5;
+  background: rgba(13, 55, 70, 0.96);
+}
+
 /* =========================================================
-   AI SAFETY PANEL
+   CENTER INSTRUMENT DISPLAY
 ========================================================= */
 
-.safety-panel {
+.cockpit-monitor {
   position: absolute;
-
-  top: 105px;
-  right: 28px;
-
-  width: 350px;
-
-  padding: 19px;
-
-  background: rgba(4, 16, 25, 0.88);
-
-  border: 1px solid rgba(27, 123, 163, 0.8);
-
-  border-radius: 11px;
-
+  z-index: 19;
+  left: 50%;
+  bottom: 6%;
+  display: flex;
+  flex-direction: column;
+  width: min(86vw, 1320px);
+  height: min(39vh, 330px);
+  min-height: 250px;
+  max-width: calc(100vw - 24px);
+  overflow: hidden;
+  padding: 6px;
+  border: 4px solid #263139;
+  border-radius: 4px;
+  background: linear-gradient(145deg, #111b20, #06131a 30%, #0a171d);
   box-shadow:
-    0 15px 35px rgba(0, 0, 0, 0.35);
-
-  pointer-events: none;
+    0 7px 18px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 1px rgba(178, 199, 204, 0.12),
+    inset 0 2px rgba(255, 255, 255, 0.07);
+  color: #eaf6ff;
+  font-family: Consolas, monospace;
+  text-align: left;
+  user-select: none;
+  transform: translateX(-50%);
+  pointer-events: auto;
 }
 
-.panel-title {
-  padding-bottom: 13px;
-
-  border-bottom: 1px solid
-    rgba(116, 158, 177, 0.18);
-
-  color: #91afc0;
-
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 1.4px;
-}
-
-.safety-row {
+.monitor-console-label {
   display: flex;
   align-items: center;
   justify-content: space-between;
-
-  padding: 14px 0;
-
-  border-bottom: 1px solid
-    rgba(116, 158, 177, 0.12);
-
-  font-size: 12px;
-}
-
-.safety-row:last-child {
-  border-bottom: none;
-}
-
-.safety-row span {
-  color: #8ba2b1;
-  letter-spacing: 0.7px;
-}
-
-.safety-row b {
-  color: #dbeaf2;
-  letter-spacing: 0.7px;
-}
-
-.safety-row .normal {
-  color: #2ee57a;
-}
-
-/* =========================================================
-   TELEMETRY CARDS
-========================================================= */
-
-.flight-instruments {
-  position: absolute;
-
-  left: 28px;
-  bottom: 27px;
-
-  display: grid;
-  grid-template-columns:
-    repeat(4, 150px);
-
-  gap: 10px;
-
-  pointer-events: none;
-}
-
-.instrument-card {
-  min-height: 92px;
-
-  padding: 14px;
-
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-
-  background: rgba(4, 16, 25, 0.9);
-
-  border: 1px solid rgba(27, 123, 163, 0.65);
-
-  border-radius: 9px;
-
-  text-align: center;
-}
-
-.instrument-card span {
-  color: #7f98a9;
-
-  font-size: 10px;
-  letter-spacing: 1.3px;
-}
-
-.instrument-card strong {
-  margin-top: 6px;
-
-  color: #e6f3f9;
-
-  font-size: 24px;
-  letter-spacing: 1px;
-}
-
-.instrument-card small {
-  margin-top: 3px;
-
-  color: #6e899a;
-
+  gap: 14px;
+  min-height: 39px;
+  padding: 2px 5px 5px;
+  border-bottom: 1px solid rgba(93, 147, 161, 0.3);
+  color: #a5c1c7;
+  font-family: Consolas, monospace;
   font-size: 10px;
   letter-spacing: 0.8px;
 }
 
-/* =========================================================
-   AI MONITORING STATUS
-========================================================= */
-
-.ai-status {
-  position: absolute;
-
-  right: 28px;
-  bottom: 28px;
-
-  padding: 11px 16px;
-
-  background: rgba(4, 16, 25, 0.92);
-
-  border: 1px solid rgba(27, 123, 163, 0.65);
-
-  border-radius: 8px;
-
-  color: #d9e8ef;
-
-  font-size: 11px;
-  letter-spacing: 1.1px;
+.monitor-brand,
+.monitor-top-status,
+.monitor-zoom {
+  display: flex;
+  align-items: center;
+  gap: 9px;
 }
 
-.ai-dot {
-  display: inline-block;
+.monitor-brand-mark {
+  display: grid;
+  width: 26px;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 1px solid #3aa5b4;
+  color: #82d3d8;
+  font-weight: 700;
+}
 
-  width: 8px;
-  height: 8px;
+.monitor-brand strong,
+.monitor-brand small {
+  display: block;
+}
 
-  margin-right: 8px;
+.monitor-brand strong {
+  color: #e2eff0;
+  font-size: 9px;
+  letter-spacing: 1px;
+}
 
+.monitor-brand small {
+  margin-top: 3px;
+  color: #70949e;
+  font-size: 7px;
+  letter-spacing: 0.65px;
+}
+
+.monitor-top-status {
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.demo-warning {
+  color: #deb86f;
+  font-size: 8px;
+  text-align: right;
+}
+
+.monitor-zoom button {
+  min-width: 30px;
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid #38525a;
+  border-radius: 2px;
+  background: #101d23;
+  color: #dcebec;
+  font-family: Consolas, monospace;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.monitor-zoom button:hover {
+  border-color: #48b7c0;
+  background: #18323a;
+}
+
+.monitor-zoom output {
+  min-width: 38px;
+  color: #9fbdc1;
+  font-size: 9px;
+  text-align: center;
+}
+
+.monitor-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #78d29a;
+  font-size: 8px;
+}
+
+.monitor-live i {
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
+  background: #6ed69e;
+  box-shadow: 0 0 6px rgba(110, 214, 158, 0.65);
+}
 
-  background: #2ee57a;
+.monitor-overview {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+  padding: 5px 4px;
+  border-bottom: 1px solid rgba(93, 147, 161, 0.3);
+  background: rgba(11, 31, 38, 0.75);
+  color: #7395a0;
+  font-family: Consolas, monospace;
+  font-size: 7px;
+  letter-spacing: 0.3px;
+}
 
-  box-shadow:
-    0 0 10px rgba(46, 229, 122, 0.9);
+.monitor-overview span {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.monitor-overview b {
+  overflow: hidden;
+  color: #d9e9e8;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.monitor-ok {
+  color: #79d49a !important;
+}
+
+.monitor-alert {
+  color: #ffbd69 !important;
+}
+
+.monitor-display-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 5px 3px 2px;
+  scrollbar-color: #28768a #091820;
+  scrollbar-width: thin;
+}
+
+.monitor-display-content {
+  --display-zoom: 1;
+}
+
+.monitor-sections {
+  display: grid;
+  grid-template-columns: 1.05fr 1.2fr 1.1fr 0.9fr;
+  gap: 6px;
+}
+
+.monitor-section {
+  min-width: 0;
+  padding: 6px 8px 4px;
+  border: 1px solid rgba(46, 102, 116, 0.67);
+  border-top: 2px solid #318c9e;
+  background: rgba(5, 22, 29, 0.8);
+}
+
+.monitor-section h2 {
+  margin: 0 0 5px;
+  color: #84b5bc;
+  font-family: Consolas, monospace;
+  font-size: calc(10px * var(--display-zoom));
+  font-weight: 700;
+  letter-spacing: 0.8px;
+}
+
+.monitor-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: 4px;
+  margin: 0;
+}
+
+.monitor-reading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  min-width: 0;
+  min-height: calc(19px * var(--display-zoom));
+  border-bottom: 1px solid rgba(92, 132, 145, 0.2);
+}
+
+.monitor-reading dt {
+  overflow: hidden;
+  color: #73909a;
+  font-family: Consolas, monospace;
+  font-size: calc(8px * var(--display-zoom));
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.monitor-reading dd {
+  margin: 0;
+  color: #e1f0ed;
+  font-family: Consolas, monospace;
+  font-size: calc(9px * var(--display-zoom));
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
 }
 
 /* =========================================================
@@ -398,21 +491,19 @@ button {
     left: 18px;
   }
 
-  .safety-panel {
-    width: 300px;
-    right: 18px;
+  .cockpit-monitor {
+    width: 92vw;
+    height: min(42vh, 360px);
+    min-height: 250px;
   }
 
-  .flight-instruments {
-    left: 18px;
-
-    grid-template-columns:
-      repeat(2, 145px);
+  .monitor-sections {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .ai-status {
-    right: 18px;
-    bottom: 18px;
+  .monitor-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 8px;
   }
 }
 
@@ -430,20 +521,33 @@ button {
     font-size: 25px;
   }
 
-  .safety-panel {
+  .cockpit-monitor {
+    bottom: 3%;
+    width: 94vw;
+    height: 45vh;
+    min-height: 270px;
+  }
+
+  .monitor-top-status {
     display: none;
   }
 
-  .flight-instruments {
-    left: 15px;
-    bottom: 15px;
-
-    grid-template-columns:
-      repeat(2, 130px);
+  .monitor-overview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .instrument-card {
-    min-height: 78px;
+  .monitor-sections {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .monitor-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .monitor-zoom button {
+    min-width: 23px;
+    height: 23px;
+    font-size: 11px;
   }
 
   .interaction-hint {
@@ -463,10 +567,15 @@ button {
   }
 
   .exit-cockpit {
-    padding: 9px 13px;
+    padding: 7px 8px;
   }
 
-  .ai-status {
-    display: none;
+  .cockpit-actions {
+    gap: 5px;
+  }
+
+  .cockpit-actions .assessment-launch {
+    padding: 7px 8px;
+    font-size: 8px;
   }
 }

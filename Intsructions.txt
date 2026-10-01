@@ -1,0 +1,1612 @@
+# AEROGUARD — AVIATION FLIGHT ANOMALY & ACCIDENT RISK DETECTION PLATFORM
+
+## ROLE
+
+Act as a **Senior Aviation Software Engineer, Deep Learning Engineer, Data Engineer, Backend Engineer, Frontend Engineer, Database Architect, DevOps Engineer, and Safety-Critical Systems Architect**.
+
+You are taking over an existing project called **AeroGuard**.
+
+Your task is to take the existing project from its current state to a **complete, technically credible, production-oriented research prototype for aviation/airport flight anomaly detection and accident-risk decision support**.
+
+This is NOT just a college UI project.
+
+The final system should be technically credible enough to demonstrate to:
+
+* airport authorities
+* airline technology teams
+* aviation safety researchers
+* aviation operations teams
+* academic evaluators
+* industry engineers
+
+However, do NOT claim that the system is certified or approved for real-world aviation operations.
+
+---
+
+# 1. FIRST — AUDIT THE EXISTING PROJECT
+
+Before writing or changing code, inspect the COMPLETE existing repository.
+
+Understand:
+
+* frontend
+* backend
+* machine-learning code
+* deep-learning code
+* datasets
+* preprocessing
+* 3D aircraft model
+* Three.js implementation
+* React components
+* API endpoints
+* database code
+* environment variables
+* configuration
+* package.json
+* Python requirements
+* existing model files
+* charts
+* routing
+* CSS
+* assets
+
+Do NOT blindly rebuild the project.
+
+Determine:
+
+### Already working
+
+List all working components.
+
+### Broken
+
+Identify:
+
+* compilation errors
+* runtime errors
+* API errors
+* dependency conflicts
+* React errors
+* Three.js errors
+* model-loading errors
+* database errors
+* incorrect imports
+* duplicate code
+
+### Missing
+
+Identify what is required for the final system but does not currently exist.
+
+### Architecture problems
+
+Identify:
+
+* tightly coupled components
+* oversized files
+* duplicate logic
+* poor database design
+* insecure configuration
+* hardcoded values
+* fake data presented as real data
+* missing error handling
+
+Then create an implementation plan.
+
+---
+
+# 2. DO NOT ASK ME TO REBUILD IT FROM SCRATCH
+
+Preserve existing working functionality.
+
+If a component is already correct, keep it.
+
+If a component is broken, fix the root cause.
+
+If an architecture change is necessary, explain why and implement it carefully.
+
+When modifying one file, check all files that depend on it.
+
+Do not introduce unnecessary breaking changes.
+
+---
+
+# 3. CORE PROJECT OBJECTIVE
+
+AeroGuard is an:
+
+> **AI-assisted aviation flight anomaly detection and accident-risk decision-support platform.**
+
+The system should:
+
+1. ingest flight data
+2. validate the data
+3. preprocess telemetry
+4. perform feature engineering
+5. analyze temporal flight behavior
+6. use Deep Learning for anomaly detection
+7. calculate an anomaly/risk score
+8. identify abnormal parameters
+9. generate alerts
+10. store historical flight information
+11. visualize aircraft behavior
+12. display anomalies on an operational dashboard
+13. allow historical analysis
+14. maintain an audit trail
+15. provide model information and evaluation metrics
+
+---
+
+# 4. DEEP LEARNING IS THE PRIMARY AI COMPONENT
+
+This is extremely important.
+
+**AeroGuard must use Deep Learning as its primary intelligence layer.**
+
+Do NOT make Isolation Forest, Random Forest, XGBoost, or another traditional ML algorithm the main model simply because it is easier.
+
+First inspect the actual dataset.
+
+Determine whether the data contains:
+
+* timestamps
+* flight sequences
+* aircraft IDs
+* flight IDs
+* telemetry measurements
+* flight phases
+* accident/anomaly labels
+* temporal dependencies
+
+If meaningful temporal sequences exist, use an appropriate Deep Learning architecture.
+
+Prioritize:
+
+### Option 1 — LSTM
+
+Use when sequential flight telemetry is available.
+
+### Option 2 — GRU
+
+Use when sequence modelling is required but a lighter architecture is appropriate.
+
+### Option 3 — LSTM/GRU Autoencoder
+
+Use for unsupervised or semi-supervised anomaly detection when abnormal examples are limited.
+
+### Option 4 — Other Deep Learning architecture
+
+Use only if justified by the actual dataset.
+
+Do NOT use a complicated architecture simply because it sounds advanced.
+
+---
+
+# 5. DEEP LEARNING PIPELINE
+
+Implement:
+
+```text
+Raw Flight Data
+       ↓
+Data Validation
+       ↓
+Data Cleaning
+       ↓
+Missing Value Handling
+       ↓
+Feature Engineering
+       ↓
+Normalization / Scaling
+       ↓
+Sequence Generation
+       ↓
+Train / Validation / Test Split
+       ↓
+Deep Learning Model
+       ↓
+Prediction / Reconstruction
+       ↓
+Anomaly Score
+       ↓
+Risk Assessment
+       ↓
+Alert Engine
+```
+
+The exact pipeline must be adapted to the actual dataset.
+
+---
+
+# 6. AVOID DATA LEAKAGE
+
+This is mandatory.
+
+Ensure:
+
+* training data does not leak into validation/test data
+* scalers are fitted only on training data
+* sequences from the same flight are not improperly split across train/test
+* future information is not used to predict past events
+
+Document the split strategy.
+
+If the dataset is chronological, use an appropriate temporal split.
+
+---
+
+# 7. DEEP LEARNING MODEL TRAINING
+
+Create a reproducible training pipeline.
+
+It should support:
+
+```text
+data loading
+      ↓
+preprocessing
+      ↓
+feature selection
+      ↓
+sequence creation
+      ↓
+model training
+      ↓
+validation
+      ↓
+evaluation
+      ↓
+model saving
+      ↓
+model versioning
+```
+
+Save:
+
+* trained model
+* scaler
+* feature list
+* model configuration
+* training metadata
+* model version
+
+Do not train the model every time the backend starts.
+
+---
+
+# 8. MODEL EVALUATION
+
+Do NOT report only accuracy.
+
+Depending on the actual task, calculate appropriate metrics such as:
+
+* precision
+* recall
+* F1-score
+* ROC-AUC
+* PR-AUC
+* confusion matrix
+* false-positive rate
+* false-negative rate
+* reconstruction error
+* anomaly detection rate
+* detection latency
+
+Explain which metrics are appropriate for the selected model.
+
+For aviation anomaly detection, pay particular attention to:
+
+* false positives
+* false negatives
+* missed anomalies
+* detection latency
+
+---
+
+# 9. ANOMALY SCORE
+
+Generate a normalized anomaly score.
+
+Example:
+
+```text
+0–20    NORMAL
+21–40   LOW
+41–60   MODERATE
+61–80   HIGH
+81–100  CRITICAL
+```
+
+These thresholds must be configurable.
+
+Do NOT represent this as a certified probability of an accident unless the model has genuinely been calibrated and validated for that interpretation.
+
+Clearly distinguish:
+
+```text
+Anomaly Score
+Model Confidence
+Operational Severity
+Accident Probability
+```
+
+These are not automatically equivalent.
+
+---
+
+# 10. HYBRID SAFETY ENGINE
+
+Deep Learning is the primary intelligence layer, but AeroGuard should also have a secondary rule-based validation layer.
+
+Architecture:
+
+```text
+             Flight Telemetry
+                    ↓
+          ┌─────────┴─────────┐
+          ↓                   ↓
+    Deep Learning       Rule Engine
+          ↓                   ↓
+    DL Anomaly Score    Parameter Checks
+          └─────────┬─────────┘
+                    ↓
+             Risk Assessment
+                    ↓
+                  Alert
+```
+
+Rules may check:
+
+* unusual altitude changes
+* excessive vertical speed
+* abnormal airspeed
+* unusual roll
+* unusual pitch
+* rapid parameter changes
+* sensor inconsistency
+* missing telemetry
+* stale telemetry
+
+Do not invent aviation limits and present them as certified standards.
+
+Make thresholds configurable.
+
+---
+
+# 11. FLIGHT-PHASE AWARENESS
+
+Where the dataset permits, identify:
+
+```text
+TAXI
+TAKEOFF
+CLIMB
+CRUISE
+DESCENT
+APPROACH
+LANDING
+```
+
+A parameter can have different operational meaning depending on flight phase.
+
+Therefore anomaly evaluation should consider flight phase where possible.
+
+If flight phase cannot be reliably determined from the dataset, clearly state this limitation.
+
+---
+
+# 12. NEON POSTGRESQL — PRIMARY DATABASE
+
+Use **Neon PostgreSQL as the primary persistent database**.
+
+Do NOT use JSON files as the primary database.
+
+Do NOT use SQLite as the production architecture.
+
+Local JSON/CSV files may only be used for:
+
+* dataset ingestion
+* model training
+* static demo data
+
+The operational application should use:
+
+```text
+Neon PostgreSQL
+```
+
+---
+
+# 13. DATABASE ARCHITECTURE
+
+Design a normalized database.
+
+At minimum consider:
+
+```text
+aircraft
+flights
+telemetry
+anomalies
+alerts
+model_versions
+system_events
+users
+```
+
+Suggested relationships:
+
+```text
+Aircraft
+   │
+   └── Flights
+          │
+          └── Telemetry
+                 │
+                 └── Anomalies
+                        │
+                        └── Alerts
+```
+
+---
+
+# 14. TELEMETRY TABLE
+
+Design telemetry storage appropriately.
+
+Possible fields:
+
+```text
+id
+flight_id
+aircraft_id
+timestamp
+latitude
+longitude
+altitude
+airspeed
+vertical_speed
+pitch
+roll
+yaw
+heading
+engine_parameters
+temperature
+pressure
+created_at
+```
+
+Only include fields actually supported by the dataset.
+
+Do NOT fabricate unavailable aircraft parameters.
+
+---
+
+# 15. ANOMALY TABLE
+
+Store:
+
+```text
+id
+flight_id
+aircraft_id
+timestamp
+anomaly_score
+severity
+detected_parameter
+observed_value
+baseline_value
+model_version
+flight_phase
+description
+created_at
+```
+
+---
+
+# 16. ALERT TABLE
+
+Store:
+
+```text
+id
+anomaly_id
+flight_id
+aircraft_id
+severity
+alert_type
+status
+created_at
+acknowledged_at
+resolved_at
+resolution_notes
+```
+
+Alert lifecycle:
+
+```text
+DETECTED
+   ↓
+ACKNOWLEDGED
+   ↓
+INVESTIGATING
+   ↓
+RESOLVED
+```
+
+---
+
+# 17. MODEL VERSION TABLE
+
+Track:
+
+```text
+model_id
+model_name
+model_type
+version
+training_date
+dataset_version
+features_used
+training_samples
+validation_samples
+test_samples
+metrics
+model_path
+created_at
+```
+
+Every generated anomaly must be traceable to the model version that produced it.
+
+---
+
+# 18. DATABASE SECURITY
+
+Never hardcode:
+
+* Neon database URL
+* passwords
+* API keys
+* secret keys
+
+Use:
+
+```text
+DATABASE_URL
+```
+
+through environment variables.
+
+Provide:
+
+```text
+.env.example
+```
+
+Never commit `.env`.
+
+---
+
+# 19. BACKEND
+
+Use **Python FastAPI** unless the existing architecture has a strong technical reason to use another backend.
+
+Recommended structure:
+
+```text
+backend/
+├── app/
+│   ├── main.py
+│   ├── config.py
+│   ├── database/
+│   ├── models/
+│   ├── schemas/
+│   ├── routes/
+│   ├── services/
+│   ├── ml/
+│   ├── anomaly/
+│   ├── utils/
+│   └── logging/
+├── training/
+├── tests/
+└── requirements.txt
+```
+
+Do not put all backend functionality in one file.
+
+---
+
+# 20. BACKEND API
+
+Implement clean APIs such as:
+
+```text
+GET  /api/health
+
+GET  /api/aircraft
+GET  /api/aircraft/{id}
+
+GET  /api/flights
+GET  /api/flights/{id}
+
+GET  /api/telemetry/{flight_id}
+
+GET  /api/anomalies
+GET  /api/anomalies/{id}
+
+GET  /api/alerts
+GET  /api/alerts/{id}
+
+POST /api/alerts/{id}/acknowledge
+POST /api/alerts/{id}/resolve
+
+GET  /api/analytics
+
+GET  /api/model/status
+GET  /api/model/metrics
+
+GET  /api/system/status
+```
+
+Use:
+
+* Pydantic validation
+* correct HTTP status codes
+* structured errors
+* logging
+* authentication architecture
+* database connection management
+
+---
+
+# 21. REAL-TIME TELEMETRY
+
+Design the system so it can eventually support real-time aircraft telemetry.
+
+If actual telemetry is unavailable, create:
+
+```text
+SIMULATION MODE
+```
+
+The interface must clearly display:
+
+> SIMULATED TELEMETRY
+
+Never present simulated telemetry as real aircraft data.
+
+Use WebSockets or another appropriate mechanism if real-time updates are required.
+
+---
+
+# 22. DATA QUALITY ENGINE
+
+Before telemetry reaches the Deep Learning model, validate:
+
+* missing values
+* invalid values
+* impossible values
+* stale timestamps
+* duplicate records
+* sudden unrealistic jumps
+* inconsistent sensor values
+
+Separate:
+
+```text
+DATA QUALITY ALERT
+```
+
+from:
+
+```text
+FLIGHT ANOMALY ALERT
+```
+
+---
+
+# 23. FRONTEND
+
+Use the existing React + Vite architecture where possible.
+
+Recommended structure:
+
+```text
+src/
+├── components/
+├── pages/
+├── layouts/
+├── hooks/
+├── services/
+├── api/
+├── utils/
+├── types/
+├── charts/
+├── three/
+├── data/
+├── styles/
+└── App.jsx
+```
+
+Do not keep the entire application inside `App.jsx`.
+
+---
+
+# 24. 3D AIRCRAFT VISUALIZATION
+
+The existing AeroGuard 3D aircraft visualization must remain an important part of the system.
+
+Use:
+
+* Three.js
+* React Three Fiber
+* Drei
+* existing GLTF/GLB model
+
+Map telemetry to the aircraft:
+
+```text
+Pitch     → Aircraft pitch
+Roll      → Aircraft roll
+Yaw       → Aircraft yaw
+Heading   → Aircraft heading
+Altitude  → Vertical position
+Speed     → Movement behavior
+Anomaly   → Visual anomaly state
+```
+
+The 3D visualization must remain smooth and must not cause the dashboard to become unresponsive.
+
+---
+
+# 25. 3D AIRCRAFT ANOMALY VISUALIZATION
+
+When an anomaly is detected:
+
+* highlight the aircraft
+* show anomaly severity
+* identify the affected parameter
+* show timestamp
+* allow the operator to inspect details
+
+Do not rely only on color.
+
+Use:
+
+* labels
+* icons
+* text
+* severity indicators
+
+so the information remains understandable.
+
+---
+
+# 26. MAIN AIRPORT OPERATIONS DASHBOARD
+
+Create a professional operational dashboard.
+
+### Header
+
+Display:
+
+```text
+AeroGuard
+System Status
+Database Status
+ML Model Status
+Telemetry Status
+Current Time
+Active Alerts
+```
+
+### Aircraft information
+
+Display:
+
+```text
+Aircraft ID
+Flight ID
+Flight Phase
+Altitude
+Airspeed
+Vertical Speed
+Heading
+Latitude
+Longitude
+```
+
+### Main center
+
+Large:
+
+```text
+3D Aircraft Visualization
+```
+
+### Right panel
+
+Display:
+
+```text
+ANOMALY SCORE
+SEVERITY
+AFFECTED PARAMETER
+MODEL VERSION
+TIMESTAMP
+```
+
+### Alert panel
+
+Show active alerts with:
+
+```text
+Critical
+High
+Medium
+Low
+```
+
+---
+
+# 27. ALERT DETAILS
+
+When an operator opens an alert, display:
+
+```text
+Aircraft
+Flight
+Timestamp
+Flight Phase
+
+Detected Parameter
+Observed Value
+Expected/Baseline Value
+
+Deep Learning Model
+Model Version
+
+Anomaly Score
+Severity
+
+Reason / Explanation
+
+Recommended Investigation
+```
+
+Do NOT generate unsupported causal explanations.
+
+Use wording such as:
+
+> "The model detected a significant deviation from the learned flight pattern."
+
+rather than:
+
+> "The engine has failed."
+
+unless the evidence genuinely supports that conclusion.
+
+---
+
+# 28. HISTORICAL ANALYTICS
+
+Allow operators to select:
+
+* aircraft
+* flight
+* date/time
+* parameter
+* anomaly severity
+
+Display:
+
+* altitude vs time
+* airspeed vs time
+* vertical speed vs time
+* anomaly score vs time
+* flight path
+* anomaly timeline
+* alert timeline
+
+---
+
+# 29. EXPLAINABILITY
+
+AeroGuard must not be a black box in the dashboard.
+
+For every anomaly, provide an understandable explanation such as:
+
+```text
+Anomaly detected because:
+
+• altitude deviated significantly from learned flight pattern
+• vertical speed changed rapidly
+• anomaly score increased from 32 → 78
+• detection occurred during descent
+```
+
+Only show factors that can actually be derived from the model/data.
+
+Do not invent explanations.
+
+If the chosen DL model supports feature attribution or reconstruction error analysis, use it.
+
+---
+
+# 30. MACHINE LEARNING MODEL PAGE
+
+Create a dedicated model information section.
+
+Display:
+
+```text
+Model:
+LSTM / GRU / Autoencoder
+
+Version:
+v1.0
+
+Training Dataset:
+<dataset>
+
+Features:
+<features>
+
+Training Samples:
+<number>
+
+Validation Samples:
+<number>
+
+Test Samples:
+<number>
+
+Precision:
+<value>
+
+Recall:
+<value>
+
+F1:
+<value>
+
+ROC-AUC / PR-AUC:
+<value>
+```
+
+Do not hardcode fake metrics.
+
+---
+
+# 31. SYSTEM STATUS
+
+Provide a system health page/panel:
+
+```text
+Backend       ONLINE
+Database      CONNECTED
+ML Model      LOADED
+Telemetry     ACTIVE
+API           HEALTHY
+3D Engine     READY
+```
+
+If something fails:
+
+```text
+DATABASE       DISCONNECTED
+```
+
+Do not continue displaying:
+
+```text
+CONNECTED
+```
+
+when the actual connection failed.
+
+---
+
+# 32. SECURITY
+
+Implement reasonable production-oriented security:
+
+* environment variables
+* authentication architecture
+* authorization
+* input validation
+* CORS configuration
+* rate limiting where appropriate
+* secure error responses
+* audit logs
+* database security
+* secret management
+
+Never expose database credentials to React.
+
+The browser must communicate with the backend.
+
+```text
+React
+ ↓
+FastAPI
+ ↓
+Neon PostgreSQL
+```
+
+NOT:
+
+```text
+React
+ ↓
+Neon directly
+```
+
+---
+
+# 33. LOGGING
+
+Implement structured logs.
+
+Record:
+
+```text
+APPLICATION_STARTED
+DATABASE_CONNECTED
+DATABASE_ERROR
+MODEL_LOADED
+MODEL_ERROR
+TELEMETRY_RECEIVED
+ANOMALY_DETECTED
+ALERT_CREATED
+ALERT_ACKNOWLEDGED
+ALERT_RESOLVED
+API_ERROR
+```
+
+Do not log sensitive credentials.
+
+---
+
+# 34. TESTING
+
+Implement:
+
+### Backend tests
+
+* API routes
+* validation
+* database operations
+* anomaly generation
+* alert lifecycle
+
+### Deep Learning tests
+
+* preprocessing
+* sequence generation
+* model loading
+* inference
+* anomaly scoring
+
+### Database tests
+
+* connection
+* insert
+* query
+* update
+* relationships
+
+### Frontend tests
+
+* dashboard rendering
+* alert interaction
+* API failure
+* 3D component
+* charts
+
+### Integration test
+
+Verify:
+
+```text
+Telemetry
+ ↓
+Validation
+ ↓
+Preprocessing
+ ↓
+Deep Learning
+ ↓
+Anomaly Score
+ ↓
+Risk Engine
+ ↓
+Alert
+ ↓
+Neon PostgreSQL
+ ↓
+FastAPI
+ ↓
+React
+ ↓
+Operator
+```
+
+---
+
+# 35. PERFORMANCE
+
+Optimize:
+
+* PostgreSQL queries
+* telemetry retrieval
+* chart rendering
+* React re-renders
+* Three.js rendering
+* ML inference
+
+Add database indexes for:
+
+```text
+aircraft_id
+flight_id
+timestamp
+severity
+status
+```
+
+Do not load millions of telemetry records into the browser at once.
+
+Use pagination, aggregation, or time-window queries.
+
+---
+
+# 36. DEPLOYMENT
+
+Prepare the project for:
+
+```text
+Development
+Testing
+Production
+```
+
+Provide:
+
+```text
+.env.example
+```
+
+Document:
+
+* frontend setup
+* backend setup
+* Neon setup
+* database migrations
+* model setup
+* model training
+* API startup
+* frontend startup
+* deployment
+
+---
+
+# 37. DO NOT FABRICATE DATA
+
+This is mandatory.
+
+If the dataset does not contain:
+
+```text
+engine temperature
+fuel flow
+pressure
+GPS
+etc.
+```
+
+do NOT invent those values and present them as actual data.
+
+If simulation is required:
+
+```text
+SIMULATION MODE
+```
+
+must be clearly visible.
+
+Separate:
+
+```text
+REAL DATA
+HISTORICAL DATA
+SIMULATED DATA
+```
+
+---
+
+# 38. AVIATION SAFETY LIMITATION
+
+AeroGuard must be explicitly described as:
+
+> An AI-assisted aviation anomaly detection and decision-support research prototype.
+
+It must NOT claim:
+
+* aviation certification
+* regulatory approval
+* accident prevention guarantees
+* guaranteed prediction
+* replacement of pilots
+* replacement of air traffic controllers
+* replacement of certified aircraft systems
+* replacement of maintenance personnel
+
+Include:
+
+> AeroGuard is a research and decision-support prototype and is not a certified aviation safety system. It must not be used as the sole basis for operational, maintenance, air-traffic-control, or emergency decisions without appropriate certification, validation, redundancy, human oversight, and regulatory approval.
+
+---
+
+# 39. DOCUMENTATION
+
+Create/update:
+
+```text
+README.md
+ARCHITECTURE.md
+DATABASE.md
+API.md
+DEEP_LEARNING.md
+MODEL_EVALUATION.md
+DEPLOYMENT.md
+TESTING.md
+SAFETY_LIMITATIONS.md
+```
+
+README should contain:
+
+* project overview
+* problem statement
+* objectives
+* architecture
+* technology stack
+* Deep Learning methodology
+* database architecture
+* Neon PostgreSQL configuration
+* API
+* frontend
+* 3D visualization
+* installation
+* execution
+* testing
+* screenshots
+* limitations
+* future work
+
+---
+
+# 40. RECOMMENDED TECHNOLOGY STACK
+
+Use the existing stack where practical.
+
+### Frontend
+
+```text
+React
+Vite
+JavaScript/TypeScript
+Three.js
+React Three Fiber
+Drei
+Recharts
+CSS
+```
+
+### Backend
+
+```text
+Python
+FastAPI
+Pydantic
+SQLAlchemy
+```
+
+### Database
+
+```text
+Neon PostgreSQL
+```
+
+### Deep Learning
+
+Prefer:
+
+```text
+PyTorch
+```
+
+unless the existing implementation already uses another suitable framework.
+
+Potential architectures:
+
+```text
+LSTM
+GRU
+LSTM Autoencoder
+GRU Autoencoder
+```
+
+Choose based on the dataset.
+
+### Data processing
+
+```text
+NumPy
+Pandas
+Scikit-learn
+```
+
+Use scikit-learn for preprocessing/evaluation where appropriate, but keep the primary predictive/anomaly intelligence in the Deep Learning model.
+
+---
+
+# 41. PROJECT STRUCTURE
+
+Aim toward a structure similar to:
+
+```text
+AeroGuard/
+│
+├── backend/
+│   ├── app/
+│   │   ├── main.py
+│   │   ├── config.py
+│   │   ├── database/
+│   │   ├── models/
+│   │   ├── schemas/
+│   │   ├── routes/
+│   │   ├── services/
+│   │   ├── ml/
+│   │   ├── anomaly/
+│   │   └── utils/
+│   │
+│   ├── training/
+│   ├── models/
+│   └── tests/
+│
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── layouts/
+│   │   ├── services/
+│   │   ├── hooks/
+│   │   ├── charts/
+│   │   ├── three/
+│   │   └── styles/
+│   └── public/
+│
+├── data/
+│
+├── docs/
+│
+├── .env.example
+├── README.md
+└── requirements.txt
+```
+
+Adapt this to the existing repository instead of blindly recreating it.
+
+---
+
+# 42. FINAL DEVELOPMENT AUDIT
+
+Before declaring the project complete, verify everything.
+
+## FRONTEND
+
+```text
+React build              PASS/FAIL
+Routing                  PASS/FAIL
+Dashboard                PASS/FAIL
+3D Aircraft              PASS/FAIL
+Charts                   PASS/FAIL
+Alerts                   PASS/FAIL
+Historical Analytics     PASS/FAIL
+Error Handling           PASS/FAIL
+```
+
+## BACKEND
+
+```text
+FastAPI                  PASS/FAIL
+API Routes               PASS/FAIL
+Validation               PASS/FAIL
+Error Handling           PASS/FAIL
+Logging                  PASS/FAIL
+```
+
+## DATABASE
+
+```text
+Neon Connection          PASS/FAIL
+Schema                   PASS/FAIL
+Migrations               PASS/FAIL
+CRUD                     PASS/FAIL
+Indexes                  PASS/FAIL
+Relationships             PASS/FAIL
+```
+
+## DEEP LEARNING
+
+```text
+Dataset Processing       PASS/FAIL
+Feature Engineering      PASS/FAIL
+Sequence Generation      PASS/FAIL
+Training                 PASS/FAIL
+Validation               PASS/FAIL
+Testing                  PASS/FAIL
+Inference                PASS/FAIL
+Anomaly Scoring          PASS/FAIL
+Model Versioning         PASS/FAIL
+```
+
+## INTEGRATION
+
+```text
+Telemetry → DL           PASS/FAIL
+DL → Anomaly             PASS/FAIL
+Anomaly → Alert          PASS/FAIL
+Alert → Database         PASS/FAIL
+Database → API           PASS/FAIL
+API → Frontend           PASS/FAIL
+Frontend → 3D            PASS/FAIL
+```
+
+---
+
+# 43. CRITICAL FINAL RULE
+
+Do not say:
+
+> "Project completed"
+
+just because the application opens.
+
+The project is complete only when the complete pipeline has been verified:
+
+```text
+                    AEROGUARD
+
+Flight Dataset / Telemetry
+          ↓
+     Data Validation
+          ↓
+    Feature Engineering
+          ↓
+     Sequence Creation
+          ↓
+   DEEP LEARNING MODEL
+      LSTM / GRU /
+   Appropriate DL Model
+          ↓
+     Anomaly Score
+          ↓
+   Risk Assessment
+          ↓
+     Alert Engine
+          ↓
+   Neon PostgreSQL
+          ↓
+      FastAPI
+          ↓
+   React Dashboard
+          ↓
+    3D Aircraft
+          ↓
+       Operator
+```
+
+Every layer must actually communicate with the next layer.
+
+Do not create fake API responses merely to make the frontend look functional.
+
+Do not hardcode anomaly results.
+
+Do not hardcode model metrics.
+
+Do not hardcode database status.
+
+Do not fabricate telemetry.
+
+Use real data wherever available and clearly labelled simulation where it is not.
+
+---
+
+# 44. FINAL DELIVERABLE
+
+At the end, provide:
+
+## PROJECT AUDIT
+
+What existed before.
+
+## IMPLEMENTED
+
+Everything actually added or fixed.
+
+## ARCHITECTURE
+
+Final system architecture.
+
+## DEEP LEARNING
+
+Explain:
+
+* selected architecture
+* why it was selected
+* input features
+* sequence length
+* preprocessing
+* training
+* evaluation
+* anomaly scoring
+
+## DATABASE
+
+Explain:
+
+* Neon PostgreSQL
+* schema
+* relationships
+* indexes
+* connection architecture
+
+## API
+
+List all implemented endpoints.
+
+## FRONTEND
+
+List all implemented pages/components.
+
+## TESTING
+
+Show actual tests performed and results.
+
+## LIMITATIONS
+
+Clearly list remaining limitations.
+
+## RUN COMMANDS
+
+Provide exact commands to:
+
+1. configure Neon
+2. configure environment variables
+3. install backend
+4. run database migrations
+5. train/load the DL model
+6. start FastAPI
+7. install frontend
+8. start React/Vite
+
+## FINAL STATUS
+
+Provide a factual PASS/FAIL status for every major subsystem.
+
+---
+
+# FINAL INSTRUCTION
+
+Take ownership of the engineering.
+
+Do not merely provide suggestions.
+
+Inspect the existing AeroGuard project, understand its current state, fix it systematically, implement the missing components, integrate **Deep Learning + Neon PostgreSQL + FastAPI + React + Three.js**, test the complete pipeline, and produce a technically credible aviation anomaly-detection decision-support prototype.
+
+Prioritize:
+
+**correctness → data integrity → Deep Learning validity → database integrity → safety → reliability → maintainability → usability → visual quality.**
+
+The goal is to create a system that can be **demonstrated seriously to an airport or aviation organization as a research/decision-support prototype**, while making no unsupported claims about certification or operational aviation safety.

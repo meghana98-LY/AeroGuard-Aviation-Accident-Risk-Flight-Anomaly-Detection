@@ -1,7 +1,8 @@
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import RiskAssessment from "./pages/RiskAssessment.jsx";
 import "./App.css";
 
 /* =========================================================
@@ -83,22 +84,22 @@ function Aircraft({ onCockpitClick }) {
    CLOUD
 ========================================================= */
 
-function Cloud({ position, scale = 1 }) {
+function Cloud({ position, scale = 1, color = "#ffffff" }) {
   return (
     <group position={position} scale={scale}>
       <mesh>
         <sphereGeometry args={[0.8, 16, 16]} />
-        <meshStandardMaterial color="#ffffff" roughness={1} />
+        <meshStandardMaterial color={color} roughness={1} />
       </mesh>
 
       <mesh position={[0.8, 0.1, 0]}>
         <sphereGeometry args={[0.6, 16, 16]} />
-        <meshStandardMaterial color="#ffffff" roughness={1} />
+        <meshStandardMaterial color={color} roughness={1} />
       </mesh>
 
       <mesh position={[-0.7, 0.05, 0]}>
         <sphereGeometry args={[0.55, 16, 16]} />
-        <meshStandardMaterial color="#ffffff" roughness={1} />
+        <meshStandardMaterial color={color} roughness={1} />
       </mesh>
     </group>
   );
@@ -109,6 +110,16 @@ function Cloud({ position, scale = 1 }) {
 ========================================================= */
 
 function FlightCamera() {
+  const camera = useThree((state) => state.camera);
+
+  useLayoutEffect(() => {
+    camera.position.set(5.2, 2.6, 6.4);
+    camera.fov = 42;
+    camera.zoom = 1;
+    camera.lookAt(0, 0, 0);
+    camera.updateProjectionMatrix();
+  }, [camera]);
+
   useFrame((state) => {
     const t = state.clock.getElapsedTime();
 
@@ -132,14 +143,24 @@ function FlightCamera() {
 ========================================================= */
 
 function CockpitCamera() {
+  const camera = useThree((state) => state.camera);
+
+  useLayoutEffect(() => {
+    camera.position.set(0, 2.05, 5.5);
+    camera.fov = 42;
+    camera.zoom = 1;
+    camera.lookAt(0, 2.2, -5);
+    camera.updateProjectionMatrix();
+  }, [camera]);
+
   useFrame((state) => {
     /*
      * Pilot eye position.
      * Looking forward through the windshield.
      */
-    state.camera.position.set(0, 1.75, 3.4);
+    state.camera.position.set(0, 2.05, 5.5);
 
-    state.camera.lookAt(0, 2.25, -5);
+    state.camera.lookAt(0, 2.2, -5);
   });
 
   return null;
@@ -166,69 +187,85 @@ function CockpitMaterial({ color, roughness = 0.6, metalness = 0 }) {
 function Windshield() {
   return (
     <group>
-      {/* Outside sky */}
-
-      <mesh position={[0, 3.0, -5.2]}>
-        <planeGeometry args={[7.8, 3.0]} />
-
-        <meshBasicMaterial color="#285873" />
+      <mesh position={[0, 3.1, -5.7]}>
+        <planeGeometry args={[15, 7]} />
+        <shaderMaterial
+          side={THREE.DoubleSide}
+          vertexShader={`varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`}
+          fragmentShader={`varying vec2 vUv; void main() { float y = vUv.y; vec3 upper = mix(vec3(0.13, 0.19, 0.32), vec3(0.48, 0.30, 0.43), smoothstep(0.62, 0.98, y)); vec3 lower = mix(vec3(0.24, 0.28, 0.40), vec3(0.98, 0.49, 0.31), smoothstep(0.12, 0.54, y)); float horizon = exp(-pow((y - 0.40) * 8.0, 2.0)); vec3 sky = mix(lower, upper, smoothstep(0.38, 0.70, y)); sky = mix(sky, vec3(1.0, 0.70, 0.42), horizon * 0.8); gl_FragColor = vec4(sky, 1.0); }`}
+        />
       </mesh>
 
-      {/* Lower horizon */}
-
-      <mesh position={[0, 2.35, -5.15]}>
-        <planeGeometry args={[7.8, 0.08]} />
-
-        <meshBasicMaterial color="#8bb9cd" />
+      <mesh position={[0, 2.55, -5.25]}>
+        <circleGeometry args={[0.28, 32]} />
+        <meshBasicMaterial color="#fff0ba" />
+      </mesh>
+      <mesh position={[0, 2.55, -5.3]}>
+        <circleGeometry args={[0.62, 32]} />
+        <meshBasicMaterial color="#ffb668" transparent opacity={0.18} />
       </mesh>
 
-      {/* Left windshield frame */}
+      <Cloud position={[-5.0, 2.48, -5.05]} scale={0.55} color="#b96e69" />
+      <Cloud position={[-3.5, 2.62, -5.0]} scale={0.42} color="#e38b70" />
+      <Cloud position={[-1.9, 2.43, -5.0]} scale={0.48} color="#ad6872" />
+      <Cloud position={[1.8, 2.5, -5.0]} scale={0.48} color="#d77b68" />
+      <Cloud position={[3.6, 2.6, -5.0]} scale={0.43} color="#ed9a72" />
+      <Cloud position={[5.2, 2.45, -5.0]} scale={0.58} color="#a85e69" />
 
-      <mesh position={[-3.85, 2.75, -5]}>
-        <boxGeometry args={[0.18, 3.6, 0.25]} />
+      {[-6.8, 0, 6.8].map((x, index) => (
+        <mesh key={`windshield-post-${index}`} position={[x, 2.85, -4.98]}>
+          <boxGeometry args={[x === 0 ? 0.2 : 0.34, 3.45, 0.38]} />
+          <CockpitMaterial color="#101820" roughness={0.4} />
+        </mesh>
+      ))}
 
-        <CockpitMaterial color="#151c23" roughness={0.45} />
+      <mesh position={[0, 4.52, -4.98]}>
+        <boxGeometry args={[14.1, 0.28, 0.42]} />
+        <CockpitMaterial color="#0d141b" roughness={0.4} />
       </mesh>
-
-      {/* Right windshield frame */}
-
-      <mesh position={[3.85, 2.75, -5]}>
-        <boxGeometry args={[0.18, 3.6, 0.25]} />
-
-        <CockpitMaterial color="#151c23" roughness={0.45} />
+      <mesh position={[0, 1.38, -4.85]}>
+        <boxGeometry args={[14.1, 0.28, 0.55]} />
+        <CockpitMaterial color="#0d141b" roughness={0.45} />
       </mesh>
+    </group>
+  );
+}
 
-      {/* Center windshield pillar */}
-
-      <mesh position={[0, 2.75, -5]}>
-        <boxGeometry args={[0.14, 3.6, 0.25]} />
-
-        <CockpitMaterial color="#151c23" roughness={0.45} />
+function OverheadPanel() {
+  const switches = Array.from({ length: 24 }, (_, index) => index);
+  return (
+    <group>
+      <mesh position={[0, 4.02, 1.25]} rotation={[-0.18, 0, 0]}>
+        <boxGeometry args={[7.2, 0.22, 1.65]} />
+        <CockpitMaterial color="#10151a" roughness={0.42} metalness={0.2} />
       </mesh>
-
-      {/* Top frame */}
-
-      <mesh position={[0, 4.45, -5]}>
-        <boxGeometry args={[8, 0.22, 0.25]} />
-
-        <CockpitMaterial color="#111820" roughness={0.45} />
-      </mesh>
-
-      {/* Bottom windshield frame */}
-
-      <mesh position={[0, 1.45, -4.9]}>
-        <boxGeometry args={[8, 0.18, 0.45]} />
-
-        <CockpitMaterial color="#111820" roughness={0.5} />
-      </mesh>
-
-      {/* Clouds outside */}
-
-      <Cloud position={[-2.3, 3.15, -5.0]} scale={0.3} />
-
-      <Cloud position={[2.4, 3.35, -5.0]} scale={0.25} />
-
-      <Cloud position={[0.8, 2.8, -5.0]} scale={0.18} />
+      {switches.map((index) => {
+        const column = index % 12;
+        const row = Math.floor(index / 12);
+        return (
+          <group
+            key={index}
+            position={[
+              -3.05 + column * 0.555,
+              4.16 + row * 0.02,
+              1.28 + (row - 0.5) * 0.58,
+            ]}
+          >
+            <mesh>
+              <boxGeometry args={[0.32, 0.035, 0.24]} />
+              <meshBasicMaterial
+                color={index % 4 === 0 ? "#d99535" : "#252d32"}
+              />
+            </mesh>
+            <mesh position={[0, 0.04, 0]}>
+              <sphereGeometry args={[0.045, 8, 8]} />
+              <meshBasicMaterial
+                color={index % 5 === 0 ? "#ffb541" : "#69502b"}
+              />
+            </mesh>
+          </group>
+        );
+      })}
     </group>
   );
 }
@@ -237,84 +274,185 @@ function Windshield() {
    COCKPIT INSTRUMENT PANEL
 ========================================================= */
 
-function InstrumentScreen({ position, size, label }) {
+function CockpitMonitor({ telemetry, analysis, apiStatus }) {
+  const [displayZoom, setDisplayZoom] = useState(1);
+  const flight = simulatedFlightContext;
+  const sections = [
+    {
+      title: "FLIGHT / AIRFRAME",
+      items: [
+        ["FLIGHT NO.", flight.flightNumber],
+        ["FLIGHT DATE", flight.flightDate],
+        ["ROUTE", flight.route],
+        ["AIRPORTS", flight.airports],
+        ["AIRCRAFT TYPE", flight.aircraftType],
+        ["AIRCRAFT AGE", flight.aircraftAge],
+        ["ENGINE HEALTH", flight.engineHealth],
+        ["RUNWAY LENGTH", flight.runwayLength],
+      ],
+    },
+    {
+      title: "FLIGHT DATA",
+      items: [
+        ["ALTITUDE", `${Math.round(telemetry.altitude).toLocaleString()} FT`],
+        ["AIRSPEED", `${Math.round(telemetry.airspeed)} KT`],
+        [
+          "VERTICAL SPEED",
+          `${telemetry.vertical_speed > 0 ? "+" : ""}${Math.round(telemetry.vertical_speed)} FT/MIN`,
+        ],
+        ["HEADING", `${Math.round(telemetry.heading)} DEG MAG`],
+        ["PITCH", `${telemetry.pitch.toFixed(1)} DEG`],
+        ["ROLL", `${telemetry.roll.toFixed(1)} DEG`],
+        ["FUEL LEVEL", flight.fuelLevel],
+        ["FLIGHT DURATION", flight.flightDuration],
+        ["TURBULENCE", flight.turbulence],
+      ],
+    },
+    {
+      title: "WEATHER",
+      items: [
+        ["VISIBILITY", flight.visibility],
+        ["TEMPERATURE", flight.temperature],
+        ["DEW POINT", flight.dewPoint],
+        ["HUMIDITY", flight.humidity],
+        ["PRECIPITATION", flight.precipitation],
+        ["WIND SPEED", flight.windSpeed],
+        ["WIND GUST", flight.windGust],
+        ["CROSSWIND", flight.crosswind],
+        ["AIR PRESSURE", flight.pressure],
+        ["NIGHT FLIGHT", flight.nightFlight],
+      ],
+    },
+    {
+      title: "SAFETY MONITOR",
+      items: [
+        ["FLIGHT STATUS", analysis.severity],
+        ["ANOMALY SCORE", `${analysis.anomaly_score.toFixed(1)} / 100`],
+        ["AFFECTED", analysis.affected_parameters.join(", ") || "NONE"],
+        ["MODEL VERSION", analysis.model_version],
+        ["API STATUS", apiStatus ? "CONNECTED" : "LOCAL SCORER"],
+        ["DATA MODE", "SIMULATED"],
+      ],
+    },
+  ];
+  const changeZoom = (amount) => {
+    setDisplayZoom((current) =>
+      Math.min(1.35, Math.max(0.8, Number((current + amount).toFixed(2)))),
+    );
+  };
+
   return (
-    <group position={position}>
-      <mesh>
-        <boxGeometry args={[size[0], size[1], 0.1]} />
-
-        <meshBasicMaterial color="#06151d" />
-      </mesh>
-
-      <mesh position={[0, size[1] * 0.28, -0.06]}>
-        <planeGeometry args={[size[0] * 0.65, 0.035]} />
-
-        <meshBasicMaterial color="#16d6ff" />
-      </mesh>
-
-      <mesh position={[0, -size[1] * 0.22, -0.06]}>
-        <planeGeometry args={[size[0] * 0.42, 0.025]} />
-
-        <meshBasicMaterial color="#2ee57a" />
-      </mesh>
-
-      <mesh position={[0, 0, -0.06]}>
-        <planeGeometry args={[size[0] * 0.18, 0.025]} />
-
-        <meshBasicMaterial color="#d9efff" />
-      </mesh>
-
-      <mesh position={[0, -size[1] * 0.4, -0.06]}>
-        <planeGeometry args={[size[0] * 0.55, 0.018]} />
-
-        <meshBasicMaterial color="#607887" />
-      </mesh>
-    </group>
+    <div
+      className="cockpit-monitor"
+      onWheel={(event) => changeZoom(event.deltaY < 0 ? 0.05 : -0.05)}
+    >
+      <header className="monitor-console-label">
+        <div className="monitor-brand">
+          <span className="monitor-brand-mark">AG</span>
+          <div>
+            <strong>AEROGUARD</strong>
+            <small>FLIGHT MONITORING</small>
+          </div>
+        </div>
+        <div className="monitor-top-status">
+          <span className="monitor-live">
+            <i /> DISPLAY ACTIVE
+          </span>
+          <span className="demo-warning">SIMULATED DATA</span>
+        </div>
+        <div className="monitor-zoom" aria-label="Display zoom controls">
+          <button
+            type="button"
+            onClick={() => changeZoom(-0.1)}
+            aria-label="Zoom out"
+          >
+            -
+          </button>
+          <output>{Math.round(displayZoom * 100)}%</output>
+          <button
+            type="button"
+            onClick={() => changeZoom(0.1)}
+            aria-label="Zoom in"
+          >
+            +
+          </button>
+          <button
+            type="button"
+            onClick={() => setDisplayZoom(1)}
+            aria-label="Reset zoom"
+          >
+            1:1
+          </button>
+        </div>
+      </header>
+      <div className="monitor-overview">
+        <span>
+          FLIGHT <b>{flight.flightNumber}</b>
+        </span>
+        <span>
+          ROUTE <b>{flight.route}</b>
+        </span>
+        <span>
+          PHASE <b>{telemetry.flight_phase}</b>
+        </span>
+        <span>
+          RISK{" "}
+          <b
+            className={
+              analysis.severity === "NORMAL" ? "monitor-ok" : "monitor-alert"
+            }
+          >
+            {analysis.severity} / {analysis.anomaly_score.toFixed(1)}
+          </b>
+        </span>
+      </div>
+      <div className="monitor-display-scroll">
+        <div
+          className="monitor-display-content"
+          style={{ "--display-zoom": displayZoom }}
+        >
+          <div className="monitor-sections">
+            {sections.map((section) => (
+              <MonitorSection
+                key={section.title}
+                title={section.title}
+                items={section.items}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
 function ControlPanel() {
   return (
     <group>
-      {/* Main panel */}
-
-      <mesh position={[0, 1.0, 1.65]} rotation={[-0.35, 0, 0]}>
-        <boxGeometry args={[7.8, 1.75, 1.15]} />
-
-        <CockpitMaterial color="#151d24" roughness={0.65} metalness={0.15} />
+      <mesh position={[0, 1.35, 1.65]} rotation={[-0.35, 0, 0]}>
+        <boxGeometry args={[8.4, 1.55, 1.15]} />
+        <CockpitMaterial color="#10151b" roughness={0.5} metalness={0.2} />
       </mesh>
 
-      {/* Left PFD */}
+      <mesh position={[0, 1.88, 2.05]} rotation={[-0.35, 0, 0]}>
+        <planeGeometry args={[4.2, 0.8]} />
+        <meshBasicMaterial color="#06151d" />
+      </mesh>
 
-      <InstrumentScreen
-        position={[-2.25, 1.38, 1.03]}
-        size={[1.65, 1.05]}
-        label="PFD"
-      />
+      {[-3.45, 3.45].map((x) => (
+        <mesh key={x} position={[x, 1.38, 2.02]} rotation={[-0.35, 0, 0]}>
+          <boxGeometry args={[0.52, 0.74, 0.13]} />
+          <CockpitMaterial color="#0b1117" roughness={0.5} metalness={0.18} />
+        </mesh>
+      ))}
 
-      {/* Center avionics */}
-
-      <InstrumentScreen
-        position={[0, 1.43, 0.95]}
-        size={[2.15, 1.25]}
-        label="NAV"
-      />
-
-      {/* Right engine display */}
-
-      <InstrumentScreen
-        position={[2.25, 1.38, 1.03]}
-        size={[1.65, 1.05]}
-        label="ENG"
-      />
-
-      {/* Small switches */}
-
-      {[-2.7, -2.25, -1.8, 1.8, 2.25, 2.7].map((x) => (
-        <mesh key={x} position={[x, 0.48, 1.45]}>
-          <cylinderGeometry args={[0.055, 0.055, 0.15, 12]} />
-
-          <CockpitMaterial color="#4b5964" roughness={0.45} />
+      {Array.from({ length: 16 }, (_, index) => (
+        <mesh key={index} position={[-3.4 + index * 0.45, 1.08, 1.97]}>
+          <cylinderGeometry args={[0.045, 0.055, 0.12, 10]} />
+          <CockpitMaterial
+            color={index % 4 === 0 ? "#b67b36" : "#34383a"}
+            roughness={0.45}
+          />
         </mesh>
       ))}
     </group>
@@ -367,7 +505,7 @@ function PilotSeat({ position }) {
       <mesh position={[0, 1.25, 0]}>
         <boxGeometry args={[1.45, 2.25, 0.62]} />
 
-        <CockpitMaterial color="#242d35" roughness={0.8} />
+        <CockpitMaterial color="#443027" roughness={0.88} />
       </mesh>
 
       {/* Seat */}
@@ -375,7 +513,7 @@ function PilotSeat({ position }) {
       <mesh position={[0, 0.32, 0.15]}>
         <boxGeometry args={[1.45, 0.65, 1.15]} />
 
-        <CockpitMaterial color="#242d35" roughness={0.8} />
+        <CockpitMaterial color="#694a35" roughness={0.86} />
       </mesh>
 
       {/* Headrest */}
@@ -383,7 +521,16 @@ function PilotSeat({ position }) {
       <mesh position={[0, 2.45, 0]}>
         <boxGeometry args={[0.95, 0.45, 0.55]} />
 
-        <CockpitMaterial color="#303a43" roughness={0.8} />
+        <CockpitMaterial color="#583b2b" roughness={0.86} />
+      </mesh>
+
+      <mesh position={[-0.78, 0.82, 0.15]}>
+        <boxGeometry args={[0.18, 0.18, 0.85]} />
+        <CockpitMaterial color="#17191b" roughness={0.55} metalness={0.2} />
+      </mesh>
+      <mesh position={[0.78, 0.82, 0.15]}>
+        <boxGeometry args={[0.18, 0.18, 0.85]} />
+        <CockpitMaterial color="#17191b" roughness={0.55} metalness={0.2} />
       </mesh>
     </group>
   );
@@ -495,7 +642,53 @@ function CockpitScene() {
    COCKPIT SAFETY DASHBOARD
 ========================================================= */
 
-function CockpitDashboard({ onExit }) {
+const simulatedFlightContext = {
+  flightNumber: "AG 042",
+  flightDate: "26 SEP 2026",
+  route: "KJFK  >  EGLL",
+  airports: "JFK / LHR",
+  aircraftType: "A320-200",
+  aircraftAge: "8.4 YR",
+  engineHealth: "SIM 96%",
+  runwayLength: "12,079 FT",
+  fuelLevel: "68%",
+  flightDuration: "05:42",
+  turbulence: "LIGHT",
+  visibility: "10 KM",
+  temperature: "+18 C",
+  dewPoint: "+12 C",
+  humidity: "68%",
+  precipitation: "NONE",
+  windSpeed: "12 KT",
+  windGust: "18 KT",
+  crosswind: "8 KT",
+  pressure: "1013 HPA",
+  nightFlight: "NO",
+};
+
+function MonitorSection({ title, items }) {
+  return (
+    <section className="monitor-section">
+      <h2>{title}</h2>
+      <dl className="monitor-grid">
+        {items.map(([label, value]) => (
+          <div className="monitor-reading" key={label}>
+            <dt>{label}</dt>
+            <dd>{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
+}
+
+function CockpitDashboard({
+  onExit,
+  onRiskAssessment,
+  telemetry,
+  analysis,
+  apiStatus,
+}) {
   return (
     <div className="cockpit-dashboard">
       {/* Top header */}
@@ -504,74 +697,25 @@ function CockpitDashboard({ onExit }) {
         <div>
           <div className="cockpit-title">AEROGUARD</div>
 
-          <div className="cockpit-subtitle">FLIGHT DECK SAFETY MONITOR</div>
+          <div className="cockpit-subtitle">
+            FLIGHT DECK MONITORING / SYNTHETIC DEMO
+          </div>
         </div>
 
-        <button className="exit-cockpit" onClick={onExit}>
-          EXIT COCKPIT
-        </button>
+        <div className="cockpit-actions">
+          <button className="assessment-launch" onClick={onRiskAssessment}>
+            RISK ASSESSMENT
+          </button>
+          <button className="exit-cockpit" onClick={onExit}>
+            EXIT COCKPIT
+          </button>
+        </div>
       </header>
-
-      {/* Right AI panel */}
-
-      <section className="safety-panel">
-        <div className="panel-title">AI FLIGHT SAFETY ANALYSIS</div>
-
-        <div className="safety-row">
-          <span>FLIGHT STATUS</span>
-          <b className="normal">NORMAL</b>
-        </div>
-
-        <div className="safety-row">
-          <span>TRAJECTORY</span>
-          <b className="normal">STABLE</b>
-        </div>
-
-        <div className="safety-row">
-          <span>ANOMALY SCORE</span>
-          <b>0.08</b>
-        </div>
-
-        <div className="safety-row">
-          <span>ENGINE STATUS</span>
-          <b className="normal">NOMINAL</b>
-        </div>
-      </section>
-
-      {/* Bottom telemetry */}
-
-      <section className="flight-instruments">
-        <div className="instrument-card">
-          <span>ALTITUDE</span>
-          <strong>35,000</strong>
-          <small>FT</small>
-        </div>
-
-        <div className="instrument-card">
-          <span>AIRSPEED</span>
-          <strong>452</strong>
-          <small>KT</small>
-        </div>
-
-        <div className="instrument-card">
-          <span>VERTICAL SPEED</span>
-          <strong>+320</strong>
-          <small>FT/MIN</small>
-        </div>
-
-        <div className="instrument-card">
-          <span>HEADING</span>
-          <strong>274°</strong>
-          <small>MAG</small>
-        </div>
-      </section>
-
-      {/* AI status */}
-
-      <div className="ai-status">
-        <span className="ai-dot"></span>
-        AI MONITORING ACTIVE
-      </div>
+      <CockpitMonitor
+        telemetry={telemetry}
+        analysis={analysis}
+        apiStatus={apiStatus}
+      />
     </div>
   );
 }
@@ -582,6 +726,77 @@ function CockpitDashboard({ onExit }) {
 
 export default function App() {
   const [cockpitSelected, setCockpitSelected] = useState(false);
+  const [activeView, setActiveView] = useState("flight");
+  const [telemetry, setTelemetry] = useState({
+    altitude: 35000,
+    airspeed: 452,
+    vertical_speed: 320,
+    pitch: 1.2,
+    roll: 2.1,
+    heading: 274,
+    flight_phase: "CRUISE",
+  });
+  const [analysis, setAnalysis] = useState({
+    anomaly_score: 8,
+    severity: "NORMAL",
+    affected_parameters: [],
+    explanation: "Waiting for telemetry.",
+    model_version: "local-simulation",
+    data_quality: [],
+  });
+  const [apiStatus, setApiStatus] = useState(false);
+
+  useEffect(() => {
+    let tick = 0;
+    const updateTelemetry = async () => {
+      tick += 1;
+      const wave = Math.sin(tick / 8);
+      const sample = {
+        flight_id: "SIM-FLT-042",
+        aircraft_id: "SIM-AERO-01",
+        timestamp: new Date().toISOString(),
+        altitude: 35000 + wave * 120,
+        airspeed: 452 + Math.sin(tick / 5) * 8,
+        vertical_speed: 320 + Math.sin(tick / 7) * 80,
+        pitch: 1.2 + wave * 0.4,
+        roll: 2.1 + Math.sin(tick / 9) * 2,
+        heading: (274 + tick * 0.15) % 360,
+        latitude: 40.6413,
+        longitude: -73.7781,
+        flight_phase: "CRUISE",
+      };
+      setTelemetry(sample);
+      try {
+        const response = await fetch("http://localhost:8000/api/inference", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(sample),
+        });
+        if (!response.ok) throw new Error("Inference request failed");
+        const payload = await response.json();
+        setAnalysis(payload.analysis);
+        setApiStatus(true);
+      } catch {
+        setApiStatus(false);
+        setAnalysis({
+          anomaly_score: 8,
+          severity: "NORMAL",
+          affected_parameters: [],
+          explanation:
+            "FastAPI is unavailable; simulated telemetry is shown with local baseline scoring.",
+          model_version: "local-simulation",
+          data_quality: [],
+        });
+      }
+    };
+    updateTelemetry();
+    const timer = window.setInterval(updateTelemetry, 3000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  if (activeView === "assessment") {
+    return <RiskAssessment onBack={() => setActiveView("flight")} />;
+  }
 
   return (
     <div className="aeroguard-app">
@@ -650,6 +865,12 @@ export default function App() {
               <span className="status-dot"></span>
               FLIGHT SIMULATION ACTIVE
             </div>
+            <button
+              className="assessment-launch"
+              onClick={() => setActiveView("assessment")}
+            >
+              OPEN RISK ASSESSMENT
+            </button>
           </div>
 
           <div className="interaction-hint">
@@ -663,7 +884,13 @@ export default function App() {
       ================================================= */}
 
       {cockpitSelected && (
-        <CockpitDashboard onExit={() => setCockpitSelected(false)} />
+        <CockpitDashboard
+          onExit={() => setCockpitSelected(false)}
+          onRiskAssessment={() => setActiveView("assessment")}
+          telemetry={telemetry}
+          analysis={analysis}
+          apiStatus={apiStatus}
+        />
       )}
     </div>
   );

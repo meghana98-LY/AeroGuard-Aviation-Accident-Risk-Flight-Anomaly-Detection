@@ -1,492 +1,214 @@
-# ✈️ AeroGuard — Aviation Accident Risk & Flight Anomaly Detection
+# AeroGuard
 
-AeroGuard is a Deep Learning-based aviation safety monitoring and visualization system designed to analyze flight behavior, detect abnormal flight patterns, estimate aviation safety risk, and present the results through an interactive 3D aircraft digital twin.
+**AeroGuard is an AI-assisted aviation anomaly and risk-assessment research prototype.** It combines a React/Three.js aircraft and cockpit experience, a manual flight-and-weather assessment form, and a FastAPI backend with a PyTorch demonstration classifier.
 
-The system combines **Deep Learning, flight trajectory analysis, anomaly detection, real-time simulation, and 3D visualization** into a single interactive platform.
+> **Safety notice:** The currently installed risk model was trained on synthetic data and predicts patterns from an illustrative generated rule. Its scores and metrics are for software demonstration only. They do not estimate real accident probability and must not be used for flight, maintenance, dispatch, air-traffic-control, or emergency decisions. AeroGuard is not certified or approved for aviation operations.
 
-> **Note:** AeroGuard is an academic/research prototype. It does not replace certified aviation safety systems and does not claim to predict actual accidents with certainty.
+## Project Status
 
----
+| Area                    | Current implementation                                                                    |
+| ----------------------- | ----------------------------------------------------------------------------------------- |
+| Aircraft visualization  | React Three Fiber scene with the GLB aircraft asset and a cockpit view                    |
+| Cockpit                 | Procedural 3D cockpit, windshield, overhead panel, seats, and flight monitor              |
+| Manual assessment       | Responsive form for flight, airframe, flight, and weather inputs                          |
+| Manual assessment model | Supervised PyTorch tabular MLP, currently trained on generated synthetic labels           |
+| Telemetry endpoint      | Pydantic validation and parameter-rule anomaly demo; not a trained sequence model         |
+| Persistence             | PostgreSQL schema is provided, but the API does not currently persist requests or results |
+| Authentication          | Not implemented; do not expose this development API publicly                              |
 
-## 🎯 Objectives
+## Features
 
-- Analyze aviation flight and safety data using Deep Learning.
-- Detect abnormal flight and trajectory patterns.
-- Estimate an AI-based flight risk/anomaly score.
-- Visualize a complete aircraft flying in a 3D environment.
-- Simulate real-time flight telemetry.
-- Connect AI predictions with aircraft behavior.
-- Provide an interactive cockpit dashboard.
-- Evaluate the performance of the implemented AI model.
-- Provide historical aviation safety analysis using accident/incident data.
+- Interactive exterior aircraft; click the cockpit area to enter the flight deck.
+- Cockpit-style instrument display with live demo telemetry, weather, flight context, model status, and anomaly information.
+- Manual assessment form for flight number/date, route, airport, aircraft type/age, engine-health entry, runway length, altitude, airspeed, fuel, duration, turbulence, weather, and night-flight status.
+- API-side input validation and a synthetic-model assessment response with risk band, score index, version, provenance, and input-sensitivity factors.
+- Factor explanations indicate whether the model output rises or falls when a feature is compared with its training-set baseline. They are model sensitivities, not causal explanations.
+- Generated, reproducible demo dataset and offline training script.
 
----
-
-## 🧠 System Concept
-
-```text
-                    AVIATION DATA
-                         │
-                         ▼
-                Data Preprocessing
-                         │
-                         ▼
-                 Deep Learning Model
-                         │
-             ┌───────────┴───────────┐
-             ▼                       ▼
-       Risk Analysis          Anomaly Detection
-             │                       │
-             └───────────┬───────────┘
-                         ▼
-                   Risk Engine
-                         │
-                         ▼
-                    FastAPI
-                         │
-                    WebSocket
-                         │
-                         ▼
-              React + Three.js
-                         │
-             ┌───────────┴───────────┐
-             ▼                       ▼
-       3D Aircraft World        Cockpit View
-             │                       │
-             │                 Safety Dashboard
-             │                       │
-             └───────────┬───────────┘
-                         ▼
-                 Real-Time Alerts
-```
-
----
-
-# ✈️ Key Features
-
-## 1. Interactive 3D Aircraft
-
-The main interface contains a complete 3D aircraft flying through a sky environment.
-
-Users can:
-
-- View the complete aircraft.
-- Rotate and zoom the camera.
-- Observe aircraft movement.
-- Follow the aircraft during flight.
-- Interact with aircraft components.
-
----
-
-## 2. Interactive Pilot Window
-
-The aircraft itself acts as an interactive interface.
+## Architecture
 
 ```text
-             3D AIRCRAFT
-                   │
-                   ▼
-           Click Pilot Window
-                   │
-                   ▼
-          Camera Transition
-                   │
-                   ▼
-              COCKPIT
-                   │
-                   ▼
-          Safety Dashboard
+React + Vite
+  ├── Three.js / React Three Fiber aircraft and cockpit
+  └── Manual flight-risk form
+          │ HTTP JSON
+          ▼
+FastAPI
+  ├── POST /api/risk-assessment → PyTorch tabular MLP artifact
+  └── POST /api/inference       → validated telemetry + parameter rules
+          │
+          └── Optional PostgreSQL schema is supplied, but runtime persistence is not connected
 ```
 
-Clicking the pilot/cockpit window transitions the camera from the external aircraft view into the cockpit.
+## Deep-Learning Model
 
----
+The manual assessment uses a **supervised feed-forward multilayer perceptron (MLP)**. It is tabular, one-flight-at-a-time input, so this implementation does not use an LSTM, GRU, or transformer.
 
-## 3. Cockpit Safety Dashboard
+The model input contains 16 numeric fields, one-hot encoded aircraft type and turbulence category, and a binary night-flight field. Flight number, flight date, route, and airport are accepted for context but are not classifier inputs. The output is transformed to a 0–100 index and assigned a descriptive band. It is not a calibrated probability.
 
-The cockpit dashboard provides flight and AI information such as:
+The included demo training data has **30,000 generated records**. Its labels come from an illustrative heuristic with random noise; therefore its metrics only measure how well the MLP recovers that generated heuristic. Current chronological held-out synthetic metrics are:
 
-- Altitude
-- Airspeed
-- Heading
-- Vertical speed
-- Pitch
-- Roll
-- Engine parameters
-- AI risk score
-- Anomaly score
-- Flight status
-- Safety alerts
+| Metric              | Value |
+| ------------------- | ----: |
+| ROC-AUC             | 0.980 |
+| PR-AUC              | 0.927 |
+| Accuracy            | 0.939 |
+| Balanced accuracy   | 0.883 |
+| Precision           | 0.867 |
+| Recall              | 0.795 |
+| F1                  | 0.829 |
+| Specificity         | 0.972 |
+| False-positive rate | 0.028 |
+| False-negative rate | 0.205 |
 
-Example:
+The classification threshold shown in model metadata was selected on the validation split; test metrics were calculated on the later chronological test split. These numbers are **not measures of aviation safety or real accident prediction**. See [DEEP_LEARNING.md](DEEP_LEARNING.md) for feature, split, and interpretation details.
+
+### Regenerate and train the demonstration model
+
+Run from `backend/` with the backend environment installed:
+
+```powershell
+python -m training.generate_synthetic_demo --output data/raw/synthetic_demo_flights.csv --rows 30000
+python -m training.train_risk_model --csv data/raw/synthetic_demo_flights.csv --output-dir models --epochs 200
+```
+
+The generator is seeded by default, so the CSV can be recreated. The CSV is ignored by Git; the generator script and model files are retained. Training saves:
+
+- `backend/models/risk_classifier.pt`
+- `backend/models/risk_classifier_metadata.json`
+
+For a real research model, replace the demo CSV with properly sourced, labeled, representative flight data. Do not train synthetic labels and then describe the result as validated accident risk.
+
+## Manual Assessment Inputs
+
+The required model inputs are:
+
+- Aircraft: type, age, entered engine health, runway length.
+- Flight: altitude, airspeed, fuel level, duration, turbulence level, night-flight flag.
+- Weather: visibility, temperature, dew point, humidity, precipitation, wind speed, wind gust, crosswind, and air pressure.
+
+Flight number, date, route, and airport are optional context fields. The current classifier does not use those fields. The assessment endpoint validates allowed categories and numerical ranges; see the Pydantic schema in `backend/app/ai/schemas.py`.
+
+## API
+
+Start FastAPI from `backend/`. Interactive OpenAPI documentation is at `http://localhost:8000/docs`.
+
+| Method | Endpoint               | Purpose                                                                              |
+| ------ | ---------------------- | ------------------------------------------------------------------------------------ |
+| `GET`  | `/api/health`          | API process health                                                                   |
+| `GET`  | `/api/model/status`    | Risk-model artifact status, version, and training-data provenance                    |
+| `POST` | `/api/risk-assessment` | Validate manual flight/weather inputs and return model index and sensitivity factors |
+| `POST` | `/api/inference`       | Validate a telemetry sample and apply demo parameter rules                           |
+
+`/api/risk-assessment` returns HTTP 503 if model artifacts are missing or invalid. The frontend uses `VITE_API_BASE_URL` when set; otherwise it calls `http://localhost:8000`.
+
+`/api/inference` accepts `flight_id`, `aircraft_id`, timestamp, altitude, airspeed, vertical speed, pitch, roll, heading, latitude, longitude, and flight phase. The current anomaly engine applies configured parameter checks (for example, high roll, speed, or vertical speed) and stale-timestamp checks. It is not deep-learning inference and does not generate causal diagnoses.
+
+## Data and Storage
+
+- `backend/data/raw/` is for source or generated CSV inputs. The synthetic demo CSV is reproducible and ignored by Git.
+- `backend/data/processed/` is currently unused by the runnable API.
+- `backend/models/` contains the TorchScript risk model and metadata. `backend/models/pretrained/` is not currently used by the assessment endpoint.
+- `backend/schema.sql` defines PostgreSQL tables and indexes for aircraft, flights, telemetry, anomalies, alerts, and model versions. Apply it to a database only when needed, but note that runtime CRUD and database connection management are not yet implemented.
+- Database credentials belong in `backend/.env`, never in the frontend. `.env.example` is a template, not a working credential file.
+
+## Setup: Windows PowerShell
+
+Prerequisites: Python 3.11/3.12 and Node.js 20 or later.
+
+### 1. Start the backend
+
+From the project root:
+
+```powershell
+cd backend
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
+
+If PowerShell blocks virtual-environment activation, run `Set-ExecutionPolicy -Scope Process Bypass` in that terminal, then activate again. Keep the backend terminal open.
+
+### 2. Start the frontend
+
+In a second terminal, from the project root:
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Open the URL Vite prints, usually `http://localhost:5173`. If that port is occupied, Vite selects another; local development CORS accepts localhost and 127.0.0.1 ports.
+
+### 3. Check the services
+
+- Frontend: the Vite URL printed by `npm run dev`.
+- API health: `http://localhost:8000/api/health`.
+- Model status: `http://localhost:8000/api/model/status`.
+- API docs: `http://localhost:8000/docs`.
+
+## Testing and Build
+
+From the project root:
+
+```powershell
+cd backend
+python -m pytest tests_test_pipeline.py -q
+python -m compileall -q app training tests_test_pipeline.py
+cd ..\frontend
+npm run build
+```
+
+The frontend build may print a Vite warning that the Three.js bundle exceeds 500 kB. It is a bundle-size warning, not a build failure.
+
+## Repository Layout
 
 ```text
-┌─────────────────────────────────────┐
-│          FLIGHT MONITOR             │
-├─────────────────────────────────────┤
-│ Altitude       32,000 ft            │
-│ Airspeed       450 kt               │
-│ Heading        180°                 │
-│ Vertical Rate  -250 ft/min          │
-│ Pitch          +1.2°                │
-│ Roll           +2.1°                │
-├─────────────────────────────────────┤
-│ AI SAFETY ANALYSIS                  │
-│                                     │
-│ Risk Score      0.18                │
-│ Anomaly Score   0.06                │
-│ Status          NORMAL              │
-└─────────────────────────────────────┘
-```
-
----
-
-## 4. Deep Learning-Based Anomaly Detection
-
-The system analyzes sequential flight behavior to identify abnormal patterns.
-
-Potential flight parameters include:
-
-- Altitude
-- Airspeed
-- Vertical rate
-- Pitch
-- Roll
-- Heading
-- Engine parameters
-- Flight trajectory
-
-Depending on the available data, models such as **LSTM, GRU, or Autoencoder-based architectures** may be evaluated.
-
-The final architecture will be selected based on the actual data/model inputs and experimental results.
-
----
-
-## 5. Real-Time Flight Simulation
-
-A flight simulator generates telemetry for the 3D aircraft.
-
-Example:
-
-```json
-{
-  "altitude": 32000,
-  "speed": 450,
-  "heading": 180,
-  "vertical_rate": -250,
-  "pitch": 1.2,
-  "roll": 2.1
-}
-```
-
-The simulator can generate controlled scenarios such as:
-
-```text
-NORMAL
-TURBULENCE
-ABNORMAL DESCENT
-EXCESSIVE ROLL
-SPEED DEVIATION
-CRITICAL FLIGHT CONDITION
-```
-
----
-
-## 6. AI-Driven Aircraft Behavior
-
-AI output can influence the aircraft animation.
-
-```text
-Normal
-   │
-   ▼
-Stable aircraft movement
-```
-
-When an anomaly is detected:
-
-```text
-Anomaly detected
-       │
-       ├── Aircraft banks
-       ├── Aircraft changes pitch
-       ├── Aircraft altitude changes
-       └── Safety alert appears
-```
-
-This connects AI analysis directly with the 3D digital twin.
-
----
-
-# 🏗️ Project Structure
-
-```text
-AEROGUARD-AVIATION-SAFETY/
-│
+.
 ├── backend/
 │   ├── app/
-│   │   ├── api/
-│   │   │   ├── flight.py
-│   │   │   └── prediction.py
-│   │   │
-│   │   ├── ai/
-│   │   │   ├── model_loader.py
-│   │   │   ├── anomaly_detector.py
-│   │   │   └── risk_engine.py
-│   │   │
-│   │   ├── simulator/
-│   │   │   ├── flight_simulator.py
-│   │   │   └── scenarios.py
-│   │   │
-│   │   ├── core/
-│   │   │   └── config.py
-│   │   │
-│   │   └── main.py
-│   │
-│   ├── models/
-│   │   └── pretrained/
-│   │
-│   ├── data/
-│   │   ├── raw/
-│   │   └── processed/
-│   │
-│   └── requirements.txt
-│
+│   │   ├── ai/                 # Pydantic schemas, demo rules, risk-model loader, preprocessing
+│   │   ├── core/               # Environment settings
+│   │   └── main.py             # FastAPI routes
+│   ├── data/raw/               # Generated or user-supplied CSV inputs
+│   ├── models/                 # TorchScript model and metadata
+│   ├── training/               # Synthetic generator and offline trainer
+│   ├── schema.sql              # PostgreSQL schema; not wired to runtime persistence
+│   ├── requirements.txt
+│   └── tests_test_pipeline.py
 ├── frontend/
-│   ├── public/
-│   │   ├── models/
-│   │   │   └── aircraft.glb
-│   │   └── textures/
-│   │
+│   ├── public/models/aircraft.glb
 │   └── src/
-│       ├── components/
-│       │   ├── Aircraft/
-│       │   ├── Environment/
-│       │   ├── Cockpit/
-│       │   ├── Dashboard/
-│       │   └── UI/
-│       │
-│       ├── pages/
-│       │   ├── FlightWorld.jsx
-│       │   └── CockpitDashboard.jsx
-│       │
-│       ├── services/
-│       │   ├── api.js
-│       │   └── websocket.js
-│       │
-│       ├── hooks/
-│       │   └── useFlightData.js
-│       │
-│       ├── utils/
-│       │   └── flightUtils.js
-│       │
-│       ├── App.jsx
-│       └── main.jsx
-│
-├── research/
-│   ├── dataset_notes.md
-│   ├── methodology.md
-│   └── model_evaluation.md
-│
-├── README.md
-└── .gitignore
+│       ├── pages/RiskAssessment.jsx
+│       ├── App.jsx              # Exterior aircraft, cockpit, telemetry loop
+│       └── App.css
+├── .env.example
+├── API.md
+├── DEEP_LEARNING.md
+├── DEPLOYMENT.md
+└── SAFETY_LIMITATIONS.md
 ```
 
----
+## Limitations and Safety
 
-# 🛠️ Technology Stack
+- The installed MLP is trained on generated synthetic data, not historical real-flight outcomes. Its score cannot be interpreted as actual accident likelihood.
+- The synthetic test metrics only measure recovery of a synthetic labeling heuristic.
+- Input sensitivity factors are model comparisons against training averages, not causal explanations.
+- The cockpit simulator uses sample telemetry and weather values; it is not connected to an aircraft, ADS-B feed, or live weather service.
+- Telemetry anomaly detection currently uses parameter rules; no trained sequence anomaly model is installed.
+- The PostgreSQL schema is provided, but the API does not currently persist telemetry, risk assessments, alerts, or audit events.
+- Authentication, authorization, production rate limiting, and operational security controls are not implemented.
 
-### Frontend
+AeroGuard is a research and demonstration prototype, not a certified aviation safety system. It must not be used as the sole basis for operational, maintenance, air-traffic-control, or emergency decisions. Any real-world use would require appropriate data, independent validation, calibration, redundancy, human oversight, certification, and regulatory approval.
 
-- React
-- JavaScript / JSX
-- Three.js
-- React Three Fiber
-- Drei
-- Recharts or another charting library
+## Further Documentation
 
-### Backend
-
-- Python
-- FastAPI
-- WebSocket
-- Uvicorn
-
-### Machine Learning
-
-- Python
-- PyTorch / TensorFlow
-- NumPy
-- Pandas
-- Scikit-learn
-
-### Deep Learning
-
-Potential approaches:
-
-- LSTM
-- GRU
-- Autoencoder
-- Pretrained aviation trajectory/anomaly models
-
-### 3D Visualization
-
-- Three.js
-- React Three Fiber
-- GLTF/GLB aircraft model
-
----
-
-# 📊 Data Sources
-
-The project can use real aviation safety data together with simulated flight telemetry.
-
-Potential data sources include:
-
-- Aviation accident and incident datasets
-- Flight trajectory/telemetry datasets
-- Public ADS-B data
-- Open aviation research datasets
-- Simulated telemetry for real-time demonstration
-
-The exact datasets, features, and preprocessing methods will be documented after inspecting the selected data.
-
----
-
-# 🤖 AI Pipeline
-
-```text
-Flight Data
-     │
-     ▼
-Data Cleaning
-     │
-     ▼
-Feature Engineering
-     │
-     ▼
-Sequence / Trajectory Processing
-     │
-     ▼
-Deep Learning / Pretrained Model
-     │
-     ▼
-Prediction
-     │
-     ▼
-Anomaly / Risk Score
-     │
-     ▼
-Safety Classification
-     │
-     ▼
-3D Visualization + Alert
-```
-
----
-
-# 📈 Model Evaluation
-
-The implemented model will be evaluated using metrics appropriate to the final learning task.
-
-### Classification
-
-- Accuracy
-- Precision
-- Recall
-- F1-score
-- ROC-AUC
-- Confusion Matrix
-
-### Anomaly Detection
-
-- Reconstruction error
-- Anomaly detection rate
-- Precision
-- Recall
-- F1-score
-- ROC-AUC / PR-AUC where applicable
-
-### Trajectory Prediction
-
-- MAE
-- RMSE
-- Trajectory deviation/error
-
-The final metrics will be reported only after experiments are performed.
-
----
-
-# 🔴 Anomaly Demonstration
-
-The system can demonstrate controlled abnormal flight conditions.
-
-### Normal Flight
-
-```text
-Altitude:       32,000 ft
-Speed:          450 kt
-Vertical Rate:  -200 ft/min
-Roll:           2°
-Pitch:          1°
-
-AI Status:      NORMAL
-```
-
-### Abnormal Scenario
-
-```text
-Altitude:       28,500 ft
-Speed:          465 kt
-Vertical Rate:  -2,800 ft/min
-Roll:           18°
-Pitch:          -7°
-
-AI Status:      ANOMALY DETECTED
-```
-
-The 3D aircraft can respond to the simulated condition by changing pitch, roll, altitude, and flight trajectory.
-
----
-
-# ⚠️ Scope and Limitations
-
-AeroGuard is an academic/research prototype.
-
-The system:
-
-- Does not replace certified aircraft safety systems.
-- Does not provide operational aviation safety decisions.
-- Does not guarantee accident prediction.
-- Uses public/research data and/or simulated telemetry.
-- Treats anomaly detection and risk estimation as research outputs rather than definitive accident forecasts.
-
----
-
-# 🔮 Future Enhancements
-
-- Live ADS-B integration
-- Weather data integration
-- Airport and route risk analysis
-- Multiple aircraft models
-- Engine-specific anomaly detection
-- Flight-phase-specific models
-- Explainable AI for anomaly decisions
-- Historical flight replay
-- Geographic flight visualization
-- Multi-aircraft monitoring
-- Advanced aviation digital-twin simulation
-
----
-
-# 👥 Project
-
-**Project:** AeroGuard  
-**Domain:** Aviation Safety + Deep Learning + 3D Visualization  
-**Type:** Academic / Research Prototype
-
----
-
-## 📜 License
-
-This project is intended for academic and research purposes.
+- [Architecture](ARCHITECTURE.md)
+- [API details](API.md)
+- [Deep-learning methodology and evaluation](DEEP_LEARNING.md)
+- [Deployment and training](DEPLOYMENT.md)
+- [Safety limitations](SAFETY_LIMITATIONS.md)
+- [Testing](TESTING.md)
