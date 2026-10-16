@@ -42,42 +42,75 @@ FastAPI
 
 ## Deep-Learning Model
 
-The manual assessment uses a **supervised feed-forward multilayer perceptron (MLP)**. It is tabular, one-flight-at-a-time input, so this implementation does not use an LSTM, GRU, or transformer.
+The manual assessment uses a **supervised feed-forward neural network**, specifically a **multilayer perceptron (MLP)** implemented in PyTorch. Each request contains one tabular flight record, so this model is an MLP—not an LSTM, GRU, or transformer, which would be appropriate for sequence input.
 
-The model input contains 16 numeric fields, one-hot encoded aircraft type and turbulence category, and a binary night-flight field. Flight number, flight date, route, and airport are accepted for context but are not classifier inputs. The output is transformed to a 0–100 index and assigned a descriptive band. It is not a calibrated probability.
+#### Model architecture
 
-The included CSV has **30,000 generated records**, already above the requested 1,000-sample minimum, so no additional duplication or augmentation is needed. Its labels come from an illustrative heuristic with random noise; therefore its metrics only measure how well the MLP recovers that generated heuristic. The current chronological held-out test metrics are:
+| Component | Configuration |
+| --- | --- |
+| Input | 30 features: 16 numeric values, 9 aircraft-type one-hot values, 4 turbulence one-hot values, and 1 night-flight flag |
+| Hidden layer 1 | 96 units, ReLU, followed by dropout (0.08) |
+| Hidden layer 2 | 48 units, ReLU |
+| Output | 1 logit; sigmoid maps it to the displayed 0–100 risk index |
+| Checkpoint | PyTorch state-dict checkpoint at `backend/models/risk_classifier.pkl` |
 
-| Metric              | Value |
-| ------------------- | ----: |
-| ROC-AUC             | 0.986 |
-| PR-AUC              | 0.948 |
-| Accuracy            | 0.947 |
-| Balanced accuracy   | 0.913 |
-| Precision           | 0.861 |
-| Recall              | 0.858 |
-| F1                  | 0.859 |
-| Specificity         | 0.968 |
-| False-positive rate | 0.032 |
-| False-negative rate | 0.142 |
+The 16 numeric features are aircraft age, engine health, runway length, altitude, airspeed, fuel, flight duration, visibility, temperature, dew point, humidity, precipitation, wind speed, wind gust, crosswind, and air pressure. Flight number, date, route, and airport may be captured as context, but are not classifier features. The output index and its NORMAL/LOW/MODERATE/HIGH/CRITICAL band are **not calibrated accident probabilities**.
 
-Validation loss is 0.241 and validation accuracy is 0.948 at the validation-selected threshold of 0.82; test loss is 0.239. The classification threshold was selected on validation, and test metrics were calculated on the later chronological test split. These numbers are **not measures of aviation safety or real accident prediction**. See [DEEP_LEARNING.md](DEEP_LEARNING.md) for feature, split, and interpretation details.
+#### Dataset and labels
 
-### Regenerate and train the demonstration model
+The generated demonstration dataset has **30,000 rows**, already more than the 1,000-sample minimum. The CSV is not included in the repository; generate it locally with the command below before retraining. No row duplication or further augmentation was performed. The reproducible generator samples aircraft, weather, turbulence, and night-flight features, and generates phase-shaped altitude and airspeed. Labels (`accident_label`) are assigned from an illustrative weighted heuristic plus random noise. They are synthetic demonstration labels—not verified accident outcomes.
 
-Run from `backend/` with the backend environment installed:
+#### Training configuration
+
+| Setting | Value |
+| --- | --- |
+| Split | Chronological, flight-level 70% / 15% / 15% |
+| Samples | 21,000 train / 4,500 validation / 4,500 test |
+| Scaling | Standardized numeric feature vector; mean and scale fit on training split only |
+| Epochs | 100 requested; early stopping selected the best validation-loss checkpoint after 53 epochs (patience 22) |
+| Batch size | 256 |
+| Optimizer | AdamW, learning rate 0.001, weight decay 0.001 |
+| Loss | Weighted binary cross-entropy with logits |
+| Seed | 42 |
+| Classification threshold | 0.82, selected on validation F1 |
+
+#### Evaluation
+
+Validation metrics are calculated on the validation split at the selected threshold. Test metrics are calculated on the later chronological test split at that same threshold.
+
+| Metric | Validation | Test |
+| --- | ---: | ---: |
+| Loss | 0.241 | 0.239 |
+| Accuracy | 0.948 | 0.947 |
+| ROC-AUC | 0.986 | 0.986 |
+| PR-AUC | 0.943 | 0.948 |
+| Balanced accuracy | — | 0.913 |
+| Precision | 0.842 | 0.861 |
+| Recall | 0.872 | 0.858 |
+| F1 | 0.857 | 0.859 |
+| Specificity | — | 0.968 |
+| False-positive rate | — | 0.032 |
+| False-negative rate | — | 0.142 |
+
+Test confusion matrix (rows = actual class `[0, 1]`; columns = predicted class `[0, 1]`):
+
+```text
+[[3539, 117],
+ [ 120, 724]]
+```
+
+These metrics measure how well the MLP recovers the generator's synthetic labeling heuristic. They are **not evidence of real accident prediction or aviation safety** and must not be used to make operational decisions.
+
+#### Retrain the demonstration model
+
+From the `backend/` directory with dependencies installed:
 
 ```powershell
 python -m training.generate_synthetic_demo --output data/raw/synthetic_demo_flights.csv --rows 30000
 python -m training.train_risk_model --csv data/raw/synthetic_demo_flights.csv --output-dir models --epochs 100 --batch-size 256
 ```
 
-The generator is seeded by default, so the CSV can be recreated. Training uses a 70/15/15 chronological flight-level split, AdamW, and weighted binary cross-entropy with logits. Early stopping halted the 100-epoch run after 53 epochs. The CSV is ignored by Git; the generator script and model files are retained. Training saves:
-
-- `backend/models/risk_classifier.pkl` (PyTorch state-dict checkpoint used by the risk-analysis API)
-- `backend/models/risk_classifier_metadata.json`
-
-For a real research model, replace the demo CSV with properly sourced, labeled, representative flight data. Do not train synthetic labels and then describe the result as validated accident risk.
+The second command saves/updates `models/risk_classifier.pkl` and `models/risk_classifier_metadata.json`. The running risk-assessment API loads that checkpoint; restart the backend after retraining. The CSV is ignored by Git, while the generator, checkpoint, and metadata are retained. For research with meaningful outcomes, replace the demo CSV with appropriately sourced, representative, verified labeled data and independently validate the model. Do not describe synthetic training as validated accident-risk prediction.
 
 ## Manual Assessment Inputs
 
@@ -106,7 +139,7 @@ Start FastAPI from `backend/`. Interactive OpenAPI documentation is at `http://l
 
 ## Data and Storage
 
-- `backend/data/raw/` is for source or generated CSV inputs. The synthetic demo CSV is reproducible and ignored by Git.
+- `backend/data/raw/` is for source or generated CSV inputs. The synthetic demo CSV can be regenerated with the training command and is ignored by Git; it is not included in the repository.
 - `backend/data/processed/` is currently unused by the runnable API.
 - `backend/models/` contains the PyTorch checkpoint and metadata used by the assessment endpoint. `backend/models/pretrained/` is not currently used by the assessment endpoint.
 - `backend/schema.sql` defines PostgreSQL tables and indexes for aircraft, flights, telemetry, anomalies, alerts, and model versions. Apply it to a database only when needed, but note that runtime CRUD and database connection management are not yet implemented.
@@ -149,6 +182,8 @@ Open the URL Vite prints, usually `http://localhost:5173`. If that port is occup
 - API health: `http://localhost:8000/api/health`.
 - Model status: `http://localhost:8000/api/model/status`.
 - API docs: `http://localhost:8000/docs`.
+
+The trained MLP is used by `POST /api/risk-assessment`. The API status endpoint reports the loaded model version and that its training data is synthetic. If model artifacts are missing or invalid, the risk-assessment endpoint returns HTTP 503 rather than producing an unscored result.
 
 ## Testing and Build
 
