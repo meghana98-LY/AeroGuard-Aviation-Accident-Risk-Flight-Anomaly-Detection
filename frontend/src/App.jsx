@@ -698,7 +698,7 @@ function CockpitDashboard({
           <div className="cockpit-title">AEROGUARD</div>
 
           <div className="cockpit-subtitle">
-            FLIGHT DECK MONITORING / SYNTHETIC DEMO
+            FLIGHT DECK MONITORING 
           </div>
         </div>
 

@@ -130,8 +130,7 @@ const fieldGroups = [
   },
   {
     title: "Weather Parameters",
-    description:
-      "Use observations for the assessment time and airport; do not treat demo data as live weather.",
+    description: "Use observations for the assessment time and airport",
     fields: [
       {
         name: "visibility_km",
@@ -373,8 +372,7 @@ export default function RiskAssessment({ onBack }) {
           </p>
           <p className="risk-demo-notice">
             DEMONSTRATION MODE: the currently installed model was trained on
-            generated synthetic data. Its score is not a real-world aviation
-            risk estimate.
+            generated labelled data.
           </p>
         </div>
 
@@ -434,7 +432,7 @@ export default function RiskAssessment({ onBack }) {
           <section className="risk-result" aria-live="polite">
             <span className="risk-eyebrow">
               {result.is_synthetic
-                ? "SYNTHETIC DEMONSTRATION MODEL / NOT REAL-WORLD RISK"
+                ? "DEMONSTRATION MODEL / NOT REAL-WORLD RISK"
                 : "MODEL OUTPUT / NOT AN ACCIDENT PROBABILITY"}
             </span>
             <h2>{result.risk_band} risk index</h2>
@@ -476,8 +474,7 @@ export default function RiskAssessment({ onBack }) {
         )}
 
         <p className="risk-disclaimer">
-          Research and decision-support prototype only. Not a certified aviation
-          safety system; never use as the sole basis for operational decisions.
+          Research and decision-support prototype only.
         </p>
       </div>
     </main>
