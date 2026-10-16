@@ -56,7 +56,13 @@ def _load_artifacts():
         scales = np.asarray(metadata["scaler_scale"], dtype=np.float32)
         if len(means) != len(FEATURE_ORDER) or len(scales) != len(FEATURE_ORDER):
             raise RiskModelUnavailable("The installed risk model scaler metadata is invalid.")
-        model = torch.jit.load(str(model_path), map_location="cpu")
+        artifact = torch.load(str(model_path), map_location="cpu", weights_only=True)
+        if artifact.get("architecture") != "RiskMLP" or artifact.get("input_size") != len(FEATURE_ORDER):
+            raise RiskModelUnavailable("The installed risk-model artifact has an unsupported architecture.")
+        from app.ai.models import RiskMLP
+
+        model = RiskMLP(len(FEATURE_ORDER))
+        model.load_state_dict(artifact["state_dict"])
         model.eval()
         return torch, model, metadata, means, scales
     except RiskModelUnavailable:

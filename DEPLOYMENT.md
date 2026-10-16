@@ -16,7 +16,7 @@ From `backend/`, run:
 python -m training.train_risk_model --csv data/raw/labeled_flights.csv --output-dir models
 ```
 
-The command creates `models/risk_classifier.pt` and `models/risk_classifier_metadata.json`, which are the default API artifact paths. Check `GET /api/model/status` after restarting FastAPI. Without both artifacts, the form intentionally reports that assessment is unavailable.
+The command creates `models/risk_classifier.pkl` and `models/risk_classifier_metadata.json`, which are the default API artifact paths. Check `GET /api/model/status` after restarting FastAPI. Without both artifacts, the form intentionally reports that assessment is unavailable.
 
 For a software-only demonstration (not real aviation risk), generate 30,000 phase-shaped synthetic rows and train the included demo classifier:
 

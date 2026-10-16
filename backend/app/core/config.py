@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./aeroguard.db"
     cors_origins: str = "http://localhost:5173"
     model_version: str = "lstm-autoencoder-demo-v1"
-    risk_model_path: str = "models/risk_classifier.pt"
+    risk_model_path: str = "models/risk_classifier.pkl"
     risk_model_metadata_path: str = "models/risk_classifier_metadata.json"
     anomaly_threshold: float = 0.58
     stale_after_seconds: int = 90

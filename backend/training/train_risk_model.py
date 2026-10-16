@@ -9,28 +9,18 @@ import pandas as pd
 import torch
 from sklearn.metrics import accuracy_score, average_precision_score, balanced_accuracy_score, confusion_matrix, f1_score, precision_score, recall_score, roc_auc_score
 from torch import nn
+from torch.utils.data import DataLoader, TensorDataset
 
+from app.ai.models import RiskMLP
 from app.ai.risk_model import FEATURE_ORDER, _feature_vector
 from app.ai.schemas import RiskAssessmentInput
 
 
-class RiskMLP(nn.Module):
-    def __init__(self, input_size: int):
-        super().__init__()
-        self.layers = nn.Sequential(
-            nn.Linear(input_size, 96),
-            nn.ReLU(),
-            nn.Dropout(0.08),
-            nn.Linear(96, 48),
-            nn.ReLU(),
-            nn.Linear(48, 1),
-        )
-
-    def forward(self, values):
-        return self.layers(values).squeeze(-1)
-
-
-def train(csv_path: Path, output_dir: Path, epochs: int = 200) -> dict:
+def train(csv_path: Path, output_dir: Path, epochs: int = 200, batch_size: int = 256) -> dict:
+    if epochs < 1:
+        raise ValueError("epochs must be at least 1.")
+    if batch_size < 1:
+        raise ValueError("batch_size must be at least 1.")
     torch.manual_seed(42)
     np.random.seed(42)
     frame = pd.read_csv(csv_path)
@@ -81,19 +71,28 @@ def train(csv_path: Path, output_dir: Path, epochs: int = 200) -> dict:
     train_y = torch.tensor(train_labels)
     validation_x = torch.tensor(validation_values)
     validation_y = torch.tensor(validation_labels)
+    train_loader = DataLoader(
+        TensorDataset(train_x, train_y),
+        batch_size=batch_size,
+        shuffle=True,
+        generator=torch.Generator().manual_seed(42),
+    )
     best_loss = float("inf")
     best_weights = copy.deepcopy(model.state_dict())
     patience = 0
+    epochs_trained = 0
 
-    for _ in range(epochs):
+    for epoch in range(epochs):
         model.train()
-        optimizer.zero_grad()
-        loss = loss_function(model(train_x), train_y)
-        loss.backward()
-        optimizer.step()
+        for batch_x, batch_y in train_loader:
+            optimizer.zero_grad()
+            loss = loss_function(model(batch_x), batch_y)
+            loss.backward()
+            optimizer.step()
         model.eval()
         with torch.inference_mode():
-            validation_loss = float(loss_function(model(validation_x), validation_y)) if len(validation_y) else float(loss)
+            validation_loss = float(loss_function(model(validation_x), validation_y))
+        epochs_trained = epoch + 1
         if validation_loss < best_loss:
             best_loss = validation_loss
             best_weights = copy.deepcopy(model.state_dict())
@@ -107,7 +106,11 @@ def train(csv_path: Path, output_dir: Path, epochs: int = 200) -> dict:
     model.eval()
     with torch.inference_mode():
         validation_scores = torch.sigmoid(model(validation_x)).numpy()
-        scores = torch.sigmoid(model(torch.tensor(test_values))).numpy()
+        validation_logits = model(validation_x)
+        test_x = torch.tensor(test_values)
+        test_logits = model(test_x)
+        scores = torch.sigmoid(test_logits).numpy()
+        test_loss = float(loss_function(test_logits, torch.tensor(test_labels)))
     thresholds = np.linspace(0.1, 0.9, 161)
     validation_threshold_scores = [
         f1_score(validation_labels.astype(int), validation_scores >= threshold, zero_division=0)
@@ -115,7 +118,9 @@ def train(csv_path: Path, output_dir: Path, epochs: int = 200) -> dict:
     ]
     decision_threshold = float(thresholds[int(np.argmax(validation_threshold_scores))])
     predictions = (scores >= decision_threshold).astype(int)
+    validation_predictions = (validation_scores >= decision_threshold).astype(int)
     test_binary = test_labels.astype(int)
+    validation_binary = validation_labels.astype(int)
     matrix = confusion_matrix(test_binary, predictions, labels=[0, 1])
     true_negative, false_positive, false_negative, true_positive = matrix.ravel()
     metrics = {
@@ -134,20 +139,48 @@ def train(csv_path: Path, output_dir: Path, epochs: int = 200) -> dict:
     }
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    traced = torch.jit.trace(model, torch.zeros(1, len(FEATURE_ORDER)))
-    traced.save(str(output_dir / "risk_classifier.pt"))
+    torch.save(
+        {
+            "state_dict": model.state_dict(),
+            "input_size": len(FEATURE_ORDER),
+            "architecture": "RiskMLP",
+        },
+        output_dir / "risk_classifier.pkl",
+    )
     synthetic_training = "data_origin" in frame.columns and frame["data_origin"].astype(str).str.contains("synthetic", case=False).all()
     metadata = {
-        "model_type": "PyTorch tabular MLP classifier",
-        "version": "synthetic-demo-risk-mlp-v2" if synthetic_training else "risk-mlp-v1",
+        "model_type": "PyTorch tabular MLP classifier (96-48-1)",
+        "version": "synthetic-demo-risk-mlp-v3" if synthetic_training else "risk-mlp-v1",
         "training_data": "synthetic demonstration data" if synthetic_training else "labeled historical flight data",
         "is_synthetic": bool(synthetic_training),
         "target": "synthetic demonstration label ranking; not a calibrated probability" if synthetic_training else "recorded accident label ranking; not a calibrated probability",
+        "training_configuration": {
+            "epochs_requested": epochs,
+            "epochs_trained": epochs_trained,
+            "batch_size": batch_size,
+            "optimizer": "AdamW",
+            "learning_rate": 0.001,
+            "weight_decay": 0.001,
+            "loss_function": "weighted binary cross-entropy with logits",
+            "early_stopping": "validation loss patience 22",
+            "seed": 42,
+        },
         "feature_order": FEATURE_ORDER,
         "scaler_mean": means.tolist(),
         "scaler_scale": scales.tolist(),
         "split_strategy": "chronological flight-level split: 70% train, 15% validation, 15% test; scaler fit on train only",
         "samples": {"total": len(frame), "train": len(train_labels), "validation": len(validation_labels), "test": len(test_labels)},
+        "validation_metrics": {
+            "loss": best_loss,
+            "accuracy": float(accuracy_score(validation_binary, validation_predictions)),
+            "roc_auc": float(roc_auc_score(validation_binary, validation_scores)),
+            "pr_auc": float(average_precision_score(validation_binary, validation_scores)),
+            "precision": float(precision_score(validation_binary, validation_predictions, zero_division=0)),
+            "recall": float(recall_score(validation_binary, validation_predictions, zero_division=0)),
+            "f1": float(f1_score(validation_binary, validation_predictions, zero_division=0)),
+            "decision_threshold": decision_threshold,
+        },
+        "test_loss": test_loss,
         "metrics": metrics,
     }
     (output_dir / "risk_classifier_metadata.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
@@ -159,5 +192,6 @@ if __name__ == "__main__":
     parser.add_argument("--csv", type=Path, required=True, help="One labeled historical record per flight.")
     parser.add_argument("--output-dir", type=Path, default=Path("models"))
     parser.add_argument("--epochs", type=int, default=200)
+    parser.add_argument("--batch-size", type=int, default=256)
     arguments = parser.parse_args()
-    print(json.dumps(train(arguments.csv, arguments.output_dir, arguments.epochs), indent=2))
+    print(json.dumps(train(arguments.csv, arguments.output_dir, arguments.epochs, arguments.batch_size), indent=2))

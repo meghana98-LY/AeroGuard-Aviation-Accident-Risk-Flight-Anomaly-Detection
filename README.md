@@ -46,22 +46,22 @@ The manual assessment uses a **supervised feed-forward multilayer perceptron (ML
 
 The model input contains 16 numeric fields, one-hot encoded aircraft type and turbulence category, and a binary night-flight field. Flight number, flight date, route, and airport are accepted for context but are not classifier inputs. The output is transformed to a 0–100 index and assigned a descriptive band. It is not a calibrated probability.
 
-The included demo training data has **30,000 generated records**. Its labels come from an illustrative heuristic with random noise; therefore its metrics only measure how well the MLP recovers that generated heuristic. Current chronological held-out synthetic metrics are:
+The included CSV has **30,000 generated records**, already above the requested 1,000-sample minimum, so no additional duplication or augmentation is needed. Its labels come from an illustrative heuristic with random noise; therefore its metrics only measure how well the MLP recovers that generated heuristic. The current chronological held-out test metrics are:
 
 | Metric              | Value |
 | ------------------- | ----: |
-| ROC-AUC             | 0.980 |
-| PR-AUC              | 0.927 |
-| Accuracy            | 0.939 |
-| Balanced accuracy   | 0.883 |
-| Precision           | 0.867 |
-| Recall              | 0.795 |
-| F1                  | 0.829 |
-| Specificity         | 0.972 |
-| False-positive rate | 0.028 |
-| False-negative rate | 0.205 |
+| ROC-AUC             | 0.986 |
+| PR-AUC              | 0.948 |
+| Accuracy            | 0.947 |
+| Balanced accuracy   | 0.913 |
+| Precision           | 0.861 |
+| Recall              | 0.858 |
+| F1                  | 0.859 |
+| Specificity         | 0.968 |
+| False-positive rate | 0.032 |
+| False-negative rate | 0.142 |
 
-The classification threshold shown in model metadata was selected on the validation split; test metrics were calculated on the later chronological test split. These numbers are **not measures of aviation safety or real accident prediction**. See [DEEP_LEARNING.md](DEEP_LEARNING.md) for feature, split, and interpretation details.
+Validation loss is 0.241 and validation accuracy is 0.948 at the validation-selected threshold of 0.82; test loss is 0.239. The classification threshold was selected on validation, and test metrics were calculated on the later chronological test split. These numbers are **not measures of aviation safety or real accident prediction**. See [DEEP_LEARNING.md](DEEP_LEARNING.md) for feature, split, and interpretation details.
 
 ### Regenerate and train the demonstration model
 
@@ -69,12 +69,12 @@ Run from `backend/` with the backend environment installed:
 
 ```powershell
 python -m training.generate_synthetic_demo --output data/raw/synthetic_demo_flights.csv --rows 30000
-python -m training.train_risk_model --csv data/raw/synthetic_demo_flights.csv --output-dir models --epochs 200
+python -m training.train_risk_model --csv data/raw/synthetic_demo_flights.csv --output-dir models --epochs 100 --batch-size 256
 ```
 
-The generator is seeded by default, so the CSV can be recreated. The CSV is ignored by Git; the generator script and model files are retained. Training saves:
+The generator is seeded by default, so the CSV can be recreated. Training uses a 70/15/15 chronological flight-level split, AdamW, and weighted binary cross-entropy with logits. Early stopping halted the 100-epoch run after 53 epochs. The CSV is ignored by Git; the generator script and model files are retained. Training saves:
 
-- `backend/models/risk_classifier.pt`
+- `backend/models/risk_classifier.pkl` (PyTorch state-dict checkpoint used by the risk-analysis API)
 - `backend/models/risk_classifier_metadata.json`
 
 For a real research model, replace the demo CSV with properly sourced, labeled, representative flight data. Do not train synthetic labels and then describe the result as validated accident risk.
@@ -108,7 +108,7 @@ Start FastAPI from `backend/`. Interactive OpenAPI documentation is at `http://l
 
 - `backend/data/raw/` is for source or generated CSV inputs. The synthetic demo CSV is reproducible and ignored by Git.
 - `backend/data/processed/` is currently unused by the runnable API.
-- `backend/models/` contains the TorchScript risk model and metadata. `backend/models/pretrained/` is not currently used by the assessment endpoint.
+- `backend/models/` contains the PyTorch checkpoint and metadata used by the assessment endpoint. `backend/models/pretrained/` is not currently used by the assessment endpoint.
 - `backend/schema.sql` defines PostgreSQL tables and indexes for aircraft, flights, telemetry, anomalies, alerts, and model versions. Apply it to a database only when needed, but note that runtime CRUD and database connection management are not yet implemented.
 - Database credentials belong in `backend/.env`, never in the frontend. `.env.example` is a template, not a working credential file.
 
@@ -174,7 +174,7 @@ The frontend build may print a Vite warning that the Three.js bundle exceeds 500
 │   │   ├── core/               # Environment settings
 │   │   └── main.py             # FastAPI routes
 │   ├── data/raw/               # Generated or user-supplied CSV inputs
-│   ├── models/                 # TorchScript model and metadata
+│   ├── models/                 # PyTorch checkpoint and metadata
 │   ├── training/               # Synthetic generator and offline trainer
 │   ├── schema.sql              # PostgreSQL schema; not wired to runtime persistence
 │   ├── requirements.txt

@@ -122,3 +122,13 @@ def test_trained_demo_model_returns_synthetic_provenance():
     assert adverse_result.risk_band == "CRITICAL"
     assert adverse_result.factors
     assert any(factor.direction == "elevates" for factor in adverse_result.factors)
+
+
+def test_risk_model_pickle_artifact_is_the_configured_model():
+    model_path, metadata_path = risk_model._model_paths()
+    assert model_path.suffix == ".pkl"
+    assert model_path.is_file()
+    assert metadata_path.is_file()
+    _, loaded_model, metadata, _, _ = risk_model._load_artifacts()
+    assert loaded_model.training is False
+    assert metadata["version"] == "synthetic-demo-risk-mlp-v3"
